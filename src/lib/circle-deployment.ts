@@ -25,9 +25,7 @@ import {
   avalancheFuji,
 } from "viem/chains";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
-import {
-  toCircleSmartAccount,
-} from "@circle-fin/modular-wallets-core";
+import { toCircleSmartAccount } from "@circle-fin/modular-wallets-core";
 import { createBundlerClient } from "viem/account-abstraction";
 
 // Circle Paymaster addresses for different chains
@@ -219,7 +217,7 @@ export const eip2612Abi = [
 export class CircleAccountDeployment {
   private client: PublicClient;
   private owner: PrivateKeyAccount;
-  private account: CircleSmartAccount | null = null;
+  private account: Account | null = null;
   private chainId: string;
   private isTestnet: boolean;
 
@@ -230,6 +228,41 @@ export class CircleAccountDeployment {
     const chain = this.getChain(chainId);
     this.client = createPublicClient({ chain, transport: http() });
     this.owner = privateKeyToAccount(privateKey as `0x${string}`);
+  }
+
+  // Static method to create a Circle client instance
+  static async createCircleClient(
+    privateKey: string,
+    chainId: string,
+    isTestnet: boolean = false
+  ): Promise<CircleAccountDeployment> {
+    const deployment = new CircleAccountDeployment(
+      privateKey,
+      chainId,
+      isTestnet
+    );
+    await deployment.initializeAccount();
+    return deployment;
+  }
+
+  // Method to get the Circle client for WalletConnect integration
+  getCircleClient() {
+    if (!this.account) {
+      throw new Error(
+        "Account not initialized. Call initializeAccount() first."
+      );
+    }
+    return {
+      account: this.account,
+      client: this.client,
+      chainId: this.chainId,
+      isTestnet: this.isTestnet,
+      owner: this.owner,
+      sendTransaction: this.sendTransaction.bind(this),
+      checkUSDCBalance: this.checkUSDCBalance.bind(this),
+      getAccountAddress: this.getAccountAddress.bind(this),
+      getChainInfo: this.getChainInfo.bind(this),
+    };
   }
 
   private getChain(chainId: string): Chain {
@@ -258,7 +291,7 @@ export class CircleAccountDeployment {
         owner: this.owner,
       });
 
-      console.log(`Account initialized: ${this.account.address}`);
+      console.log(`Account initialized: ${this.account?.address}`);
       return this.account;
     } catch (error) {
       console.error("Failed to initialize account:", error);
@@ -281,7 +314,9 @@ export class CircleAccountDeployment {
     });
 
     try {
-      const balance = await usdc.read.balanceOf([this.account.address]);
+      const balance = (await usdc.read.balanceOf([
+        this.account.address,
+      ])) as bigint;
       console.log(`USDC Balance: ${balance.toString()}`);
       return balance;
     } catch (error) {
@@ -300,6 +335,37 @@ export class CircleAccountDeployment {
       CIRCLE_PAYMASTER_ADDRESSES[this.chainId] ||
       CIRCLE_PAYMASTER_ADDRESSES["1"]
     );
+  }
+
+  private createPaymaster() {
+    const usdcAddress = this.getUSDCAddress();
+    const paymasterAddress = this.getPaymasterAddress();
+    const signPermit = this.signPermit.bind(this);
+
+    return {
+      async getPaymasterData(parameters: unknown) {
+        const permitAmount = BigInt(1000000000000000000);
+        console.log("signPermit");
+        const permitSignature = await signPermit(
+          paymasterAddress,
+          permitAmount
+        );
+
+        console.log("permitSignature", permitSignature);
+
+        const paymasterData = encodePacked(
+          ["uint8", "address", "uint256", "bytes"],
+          [0, usdcAddress as `0x${string}`, permitAmount, permitSignature]
+        );
+
+        return {
+          paymaster: paymasterAddress as `0x${string}`,
+          paymasterData: paymasterData as `0x${string}`,
+          paymasterVerificationGasLimit: BigInt(200000),
+          paymasterPostOpGasLimit: BigInt(15000),
+        };
+      },
+    };
   }
 
   async signPermit(spenderAddress: string, permitAmount: bigint) {
@@ -323,9 +389,18 @@ export class CircleAccountDeployment {
       value: permitAmount,
     });
 
-    const wrappedPermitSignature = await this.account.signTypedData(permitData);
-    const { signature } = parseErc6492Signature(wrappedPermitSignature);
+    console.log("permitData", permitData);
 
+    if (!this.account) {
+      throw new Error(
+        "Account not initialized. Call initializeAccount() first."
+      );
+    }
+    const wrappedPermitSignature = await this.account.signTypedData(
+      permitData as unknown as Parameters<typeof this.account.signTypedData>[0]
+    );
+    const { signature } = parseErc6492Signature(wrappedPermitSignature);
+    console.log("signature", signature);
     return signature;
   }
 
@@ -340,6 +415,17 @@ export class CircleAccountDeployment {
     spenderAddress: string;
     value: bigint;
   }) {
+    const chainId = this.client.chain?.id;
+    if (!chainId) {
+      throw new Error("Chain ID not available");
+    }
+
+    const tokenContract = getContract({
+      client: this.client,
+      address: token.address,
+      abi: eip2612Abi,
+    });
+
     return {
       types: {
         EIP712Domain: [
@@ -356,49 +442,22 @@ export class CircleAccountDeployment {
           { name: "deadline", type: "uint256" },
         ],
       },
-      primaryType: "Permit",
+      primaryType: "Permit" as const,
       domain: {
-        name: await token.read.name(),
-        version: await token.read.version(),
-        chainId: this.client.chain.id,
+        name: (await tokenContract.read.name()) as string,
+        version: (await tokenContract.read.version()) as string,
+        chainId,
         verifyingContract: token.address,
       },
       message: {
         owner: ownerAddress,
         spender: spenderAddress,
         value: value.toString(),
-        nonce: (await token.read.nonces([ownerAddress])).toString(),
+        nonce: (
+          (await tokenContract.read.nonces([ownerAddress])) as bigint
+        ).toString(),
         deadline: maxUint256.toString(),
       },
-    };
-  }
-
-  async createPaymasterData(permitAmount: bigint = BigInt(10000000)) {
-    if (!this.account) {
-      throw new Error(
-        "Account not initialized. Call initializeAccount() first."
-      );
-    }
-
-    const paymasterAddress = this.getPaymasterAddress();
-    const usdcAddress = this.getUSDCAddress();
-
-    const permitSignature = await this.signPermit(
-      paymasterAddress,
-      permitAmount
-    );
-
-    const paymasterData = encodePacked(
-      ["uint8", "address", "uint256", "bytes"],
-      [0, usdcAddress as `0x${string}`, permitAmount, permitSignature]
-    );
-
-    return {
-      paymaster: paymasterAddress as `0x${string}`,
-      paymasterData,
-      paymasterVerificationGasLimit: BigInt(200000),
-      paymasterPostOpGasLimit: BigInt(15000),
-      isFinal: true,
     };
   }
 
@@ -410,12 +469,12 @@ export class CircleAccountDeployment {
     }
 
     try {
-      const paymaster = await this.createPaymasterData();
+      const paymaster = this.createPaymaster();
 
       const bundlerClient = createBundlerClient({
         account: this.account,
         client: this.client,
-        paymaster: true, // Use simple paymaster flag
+        paymaster,
         userOperation: {
           estimateFeesPerGas: async () => {
             // Use default gas estimation
@@ -431,7 +490,9 @@ export class CircleAccountDeployment {
       });
 
       const hash = await bundlerClient.sendUserOperation({
-        account: this.account,
+        account: this.account as unknown as Parameters<
+          typeof bundlerClient.sendUserOperation
+        >[0]["account"],
         calls: [], // Empty calls for deployment
       });
 
@@ -462,12 +523,13 @@ export class CircleAccountDeployment {
     }
 
     try {
-      const paymaster = await this.createPaymasterData();
-
+      console.log("Sending transaction to:", to);
+      const paymaster = this.createPaymaster();
+      console.log("paymaster", paymaster);
       const bundlerClient = createBundlerClient({
         account: this.account,
         client: this.client,
-        paymaster: true, // Use simple paymaster flag
+        paymaster,
         userOperation: {
           estimateFeesPerGas: async () => {
             // Use default gas estimation
@@ -483,7 +545,7 @@ export class CircleAccountDeployment {
       });
 
       const hash = await bundlerClient.sendUserOperation({
-        account: this.account,
+        account: this.account as any,
         calls: [
           {
             to: to as `0x${string}`,
@@ -516,9 +578,10 @@ export class CircleAccountDeployment {
   }
 
   getChainInfo() {
+    const chainName = this.client.chain?.name || "Unknown";
     return {
       chainId: this.chainId,
-      chainName: this.client.chain.name,
+      chainName,
       isTestnet: this.isTestnet,
       usdcAddress: this.getUSDCAddress(),
       paymasterAddress: this.getPaymasterAddress(),

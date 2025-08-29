@@ -9,7 +9,8 @@ import React, {
 } from "react";
 import { CircleWalletConnect } from "@/lib/walletconnect";
 import CircleDeployment from "@/components/CircleDeployment";
-import { formatJsonRpcResult } from '@walletconnect/jsonrpc-utils';
+import { formatJsonRpcResult, formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
+import { CircleAccountDeployment } from "@/lib/circle-deployment";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"walletconnect" | "deployment">("walletconnect");
@@ -20,6 +21,8 @@ export default function HomePage() {
   const [circleAccountAddress, setCircleAccountAddress] = useState<string>("");
   const [chainId, setChainId] = useState<string>("1");
   const [isTestnet, setIsTestnet] = useState<boolean>(false);
+  const [privateKey, setPrivateKey] = useState<string>("");
+  const [circleDeployment, setCircleDeployment] = useState<CircleAccountDeployment | null>(null);
   const logRef = useRef<HTMLTextAreaElement | null>(null);
   const walletRef = useRef<CircleWalletConnect | null>(null);
 
@@ -90,21 +93,105 @@ export default function HomePage() {
               }
               return;
             }
+            // Handle read-only RPC methods
+            if (wcTx?.method === 'eth_blockNumber' || 
+                wcTx?.method === 'eth_chainId' || 
+                wcTx?.method === 'eth_getBalance' ||
+                wcTx?.method === 'eth_getCode' ||
+                wcTx?.method === 'eth_getTransactionCount' ||
+                wcTx?.method === 'eth_getTransactionReceipt' ||
+                wcTx?.method === 'eth_estimateGas' ||
+                wcTx?.method === 'eth_call' ||
+                wcTx?.method === 'eth_getLogs' ||
+                wcTx?.method === 'eth_getBlockByNumber' ||
+                wcTx?.method === 'eth_getBlockByHash' ||
+                wcTx?.method === 'eth_getTransactionByHash' ||
+                wcTx?.method === 'eth_getTransactionByBlockHashAndIndex' ||
+                wcTx?.method === 'eth_getTransactionByBlockNumberAndIndex' ||
+                wcTx?.method === 'eth_getUncleByBlockHashAndIndex' ||
+                wcTx?.method === 'eth_getUncleByBlockNumberAndIndex' ||
+                wcTx?.method === 'eth_getUncleCountByBlockHash' ||
+                wcTx?.method === 'eth_getUncleCountByBlockNumber' ||
+                wcTx?.method === 'eth_getStorageAt' ||
+                wcTx?.method === 'eth_protocolVersion' ||
+                wcTx?.method === 'eth_syncing' ||
+                wcTx?.method === 'eth_coinbase' ||
+                wcTx?.method === 'eth_mining' ||
+                wcTx?.method === 'eth_hashrate' ||
+                wcTx?.method === 'eth_gasPrice' ||
+                wcTx?.method === 'eth_accounts' ||
+                wcTx?.method === 'eth_getBlockTransactionCountByHash' ||
+                wcTx?.method === 'eth_getBlockTransactionCountByNumber' ||
+                wcTx?.method === 'eth_newFilter' ||
+                wcTx?.method === 'eth_newBlockFilter' ||
+                wcTx?.method === 'eth_newPendingTransactionFilter' ||
+                wcTx?.method === 'eth_uninstallFilter' ||
+                wcTx?.method === 'eth_getFilterChanges' ||
+                wcTx?.method === 'eth_getFilterLogs' ||
+                wcTx?.method === 'eth_subscribe' ||
+                wcTx?.method === 'eth_unsubscribe') {
+              
+                             try {
+                 const result = await wallet.makeRpcCall(wcTx.method, wcTx.params || []);
+                 const response = formatJsonRpcResult(Number(event.id), result);
+                 await wallet.sendSessionResponse(event.topic, response);
+                 return;
+               } catch (error) {
+                 console.error(`RPC call failed for ${wcTx.method}:`, error);
+                 const errorResponse = formatJsonRpcError(Number(event.id), {
+                   code: -32603,
+                   message: `Internal error: ${error instanceof Error ? error.message : String(error)}`
+                 });
+                 await wallet.sendSessionResponse(event.topic, errorResponse);
+                 return;
+               }
+            }
+
             // EIP-712 support
             if (wcTx?.method === 'eth_signTypedData' || wcTx?.method === 'eth_signTypedData_v4') {
-              // For threshold 1, sign the EIP-712 typed data
-              // Use ethers.js signer for EIP-712
-              let signature: string;
-
-              // setIsSigning(false);
-              // Respond to dapp with signature
-              // @ts-expect-error - event.id is not typed
-              const response = formatJsonRpcResult(event.id, signature);
-              await wallet.sendSessionResponse(event.topic, response);
+              // For now, return an error since we need to implement signing
+              const errorResponse = formatJsonRpcError(Number(event.id), {
+                code: -32601,
+                message: "Method not implemented: EIP-712 signing not yet supported"
+              });
+              await wallet.sendSessionResponse(event.topic, errorResponse);
               return;
             }
-            // Fallback: setWcRequest for modal UI for other requests
-            // setWcRequest(event);
+
+            if(wcTx?.method === 'eth_sendTransaction') {
+              try {
+                const result = await wallet.sendTransaction(wcTx.params);
+                const response = formatJsonRpcResult(Number(event.id), result);
+                await wallet.sendSessionResponse(event.topic, response);
+                return;
+              } catch (error) {
+                console.error(`Transaction failed:`, error);
+                const errorResponse = formatJsonRpcError(Number(event.id), {
+                  code: -32603,
+                  message: `Transaction failed: ${error instanceof Error ? error.message : String(error)}`
+                });
+                await wallet.sendSessionResponse(event.topic, errorResponse);
+                return;
+              }
+            }
+
+            // Handle eth_sign and personal_sign
+            if (wcTx?.method === 'eth_sign' || wcTx?.method === 'personal_sign') {
+              // For now, return an error since we need to implement signing
+              const errorResponse = formatJsonRpcError(Number(event.id), {
+                code: -32601,
+                message: "Method not implemented: Signing not yet supported"
+              });
+              await wallet.sendSessionResponse(event.topic, errorResponse);
+              return;
+            }
+
+            // Fallback: return method not found for unhandled methods
+            const errorResponse = formatJsonRpcError(Number(event.id), {
+              code: -32601,
+              message: `Method not found: ${wcTx?.method || 'unknown'}`
+            });
+            await wallet.sendSessionResponse(event.topic, errorResponse);
           });
 
           wallet.onSessionDelete(() => {
@@ -155,10 +242,51 @@ export default function HomePage() {
     }
   }, [circleAccountAddress, chainId, isTestnet]);
 
+  const handleCreateCircleDeployment = useCallback(async () => {
+    if (!privateKey || !walletRef.current) return;
+
+    try {
+      setStatus("Creating Circle deployment...");
+      
+      // Create Circle deployment instance
+      const deployment = new CircleAccountDeployment(privateKey, chainId, isTestnet);
+      await deployment.initializeAccount();
+      
+      setCircleDeployment(deployment);
+      
+      // Get the Circle client interface
+      const circleClient = deployment.getCircleClient();
+      
+      // Set the deployment in the wallet for transaction handling
+      walletRef.current.setCircleDeployment(circleClient);
+      
+      // Get the account address and set it
+      const accountAddress = circleClient.getAccountAddress();
+      if (accountAddress) {
+        setCircleAccountAddress(accountAddress);
+        walletRef.current.setCircleAccountAddress(accountAddress);
+      }
+
+      setStatus("Circle deployment created successfully!");
+      
+      if (logRef.current) {
+        logRef.current.value += `\n${new Date().toISOString()} | Circle deployment created: ${accountAddress} on chain ${chainId} (${isTestnet ? 'testnet' : 'mainnet'})`;
+        logRef.current.scrollTop = logRef.current.scrollHeight;
+      }
+    } catch (error) {
+      setStatus(`Failed to create Circle deployment: ${error instanceof Error ? error.message : String(error)}`);
+      if (logRef.current) {
+        logRef.current.value += `\n${new Date().toISOString()} | ERROR: Failed to create Circle deployment: ${error instanceof Error ? error.message : String(error)}`;
+        logRef.current.scrollTop = logRef.current.scrollHeight;
+      }
+    }
+  }, [privateKey, chainId, isTestnet]);
+
   const paymasterInfo = walletRef.current?.getPaymasterInfo();
   const networkConfig = walletRef.current?.getNetworkConfig();
   const allSupportedChains = walletRef.current?.getAllSupportedChains();
   const configStatus = walletRef.current?.getConfigurationStatus();
+  const circleClientInfo = circleDeployment?.getCircleClient();
 
   // Get available chains based on network type
   const availableChains = useMemo(() => {
@@ -231,11 +359,12 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Circle Smart Account Address
+                    Private Key (for Circle deployment)
                   </label>
                   <input
-                    value={circleAccountAddress}
-                    onChange={(e) => setCircleAccountAddress(e.target.value.trim())}
+                    type="password"
+                    value={privateKey}
+                    onChange={(e) => setPrivateKey(e.target.value.trim())}
                     placeholder="0x..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -269,21 +398,47 @@ export default function HomePage() {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chain ID
-                </label>
-                <select
-                  value={chainId}
-                  onChange={(e) => setChainId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <button
+                  onClick={handleCreateCircleDeployment}
+                  disabled={!privateKey || !initialized}
+                  className="w-full md:w-auto bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed mb-4"
                 >
-                  {Object.entries(availableChains || {}).map(([chainId, chainName]) => (
-                    <option key={chainId} value={chainId.replace('eip155:', '')}>
-                      {String(chainName)} ({chainId.replace('eip155:', '')})
-                    </option>
-                  ))}
-                </select>
+                  Create Circle Deployment
+                </button>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Circle Smart Account Address
+                  </label>
+                  <input
+                    value={circleAccountAddress}
+                    onChange={(e) => setCircleAccountAddress(e.target.value.trim())}
+                    placeholder="0x..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Chain ID
+                  </label>
+                  <select
+                    value={chainId}
+                    onChange={(e) => setChainId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {Object.entries(availableChains || {}).map(([chainId, chainName]) => (
+                      <option key={chainId} value={chainId.replace('eip155:', '')}>
+                        {String(chainName)} ({chainId.replace('eip155:', '')})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+
 
               <button
                 onClick={handleSetCircleAccount}
@@ -346,6 +501,7 @@ export default function HomePage() {
                   }`}>
                     <li>Status: {configStatus.isConfigured ? '✅ Configured' : '⚠️ Not Configured'}</li>
                     <li>Circle Account: {configStatus.hasCircleAccount ? '✅ Set' : '❌ Not Set'}</li>
+                    <li>Circle Deployment: {circleDeployment ? '✅ Created' : '❌ Not Created'}</li>
                     <li>Chain ID: {configStatus.chainId}</li>
                     <li>Network: {configStatus.isTestnet ? 'Testnet' : 'Mainnet'}</li>
                   </ul>
@@ -354,6 +510,26 @@ export default function HomePage() {
                       ⚠️ Set your Circle Smart Account address before connecting to dapps for the best experience.
                     </p>
                   )}
+                  {!circleDeployment && (
+                    <p className="text-blue-700 text-sm mt-2">
+                      💡 Create a Circle deployment to enable transaction sending with USDC gas payments.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {circleClientInfo && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                  <h4 className="font-semibold text-purple-800 mb-2">Circle Client Information</h4>
+                  <ul className="text-purple-700 text-sm space-y-1">
+                    <li>Account Address: <span className="font-mono break-all">{circleClientInfo.getAccountAddress()}</span></li>
+                    <li>Chain ID: {circleClientInfo.chainId}</li>
+                    <li>Network: {circleClientInfo.isTestnet ? 'Testnet' : 'Mainnet'}</li>
+                    <li>Client Status: ✅ Active</li>
+                  </ul>
+                  <p className="text-purple-700 text-sm mt-2">
+                    💡 This Circle client is ready to handle transactions with USDC gas payments.
+                  </p>
                 </div>
               )}
 
@@ -375,6 +551,16 @@ export default function HomePage() {
                   Set your Circle Smart Account address, network type, and chain ID before connecting to dapps.
                   Testnet connections are free and perfect for development and testing.
                 </p>
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <h5 className="font-semibold text-blue-800 mb-2">Circle Integration Guide:</h5>
+                  <ol className="text-blue-700 text-sm space-y-1">
+                    <li>1. Enter your private key (for Circle Smart Account creation)</li>
+                    <li>2. Select network type (testnet recommended for testing)</li>
+                    <li>3. Click "Create Circle Deployment" to initialize the Circle client</li>
+                    <li>4. The Circle Smart Account address will be automatically set</li>
+                    <li>5. Connect to dapps - transactions will use USDC for gas payments</li>
+                  </ol>
+                </div>
               </div>
             </div>
           </div>

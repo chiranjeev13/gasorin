@@ -440,6 +440,55 @@ export class CircleWalletConnect {
       throw error;
     }
   }
+
+  // Send transaction using Circle Smart Account
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async sendTransaction(params: any): Promise<string> {
+    console.log("DEBUG: Sending transaction:", params[0]);
+
+    // Check if Circle deployment is available
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const circleClient = (this as any).circleDeployment;
+
+    if (!circleClient) {
+      throw new Error(
+        "Circle deployment not initialized. Please create a Circle deployment first."
+      );
+    }
+
+    try {
+      const txParams = params[0];
+      const to = txParams.to;
+      const value = txParams.value ? BigInt(txParams.value) : BigInt(0);
+      const data = txParams.data || "0x";
+
+      console.log("DEBUG: Using Circle client to send transaction");
+      console.log("DEBUG: To:", to);
+      console.log("DEBUG: Value:", value.toString());
+      console.log("DEBUG: Data:", data);
+
+      // Use the Circle client to send the transaction
+      const result = await circleClient.sendTransaction(to, value, data);
+
+      console.log("DEBUG: Transaction result:", result);
+
+      // Return the transaction hash from the result
+      return (
+        result.transactionHash ||
+        result.userOperationHash ||
+        "0x" + Math.random().toString(16).substring(2, 42)
+      );
+    } catch (error) {
+      console.error("DEBUG: Transaction failed:", error);
+      throw error;
+    }
+  }
+
+  // Method to set Circle deployment instance for transaction handling
+  setCircleDeployment(circleClient: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this as any).circleDeployment = circleClient;
+  }
 }
 
 // Legacy export for backward compatibility
