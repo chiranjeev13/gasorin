@@ -46,7 +46,7 @@ export const CIRCLE_PAYMASTER_ADDRESSES: Record<string, string> = {
 export const USDC_ADDRESSES: Record<string, string> = {
   "42161": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // Arbitrum
   "8453": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base
-  "1": "0xA0b86a33E6441b8c4C8C8C8C8C8C8C8C8C8C8C8C", // Ethereum
+  "1": "0xA0b86a33E6441b8c4C8C8C8C8C8C8C8C8C8C8C8C", // Ethereum (placeholder - needs real address)
   "137": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // Polygon
   "10": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", // Optimism
   "43114": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // Avalanche

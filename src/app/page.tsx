@@ -11,13 +11,40 @@ import { CircleWalletConnect } from "@/lib/walletconnect";
 import { formatJsonRpcResult, formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import { CircleAccountDeployment } from "@/lib/circle-deployment";
 import CustomConnectButton from "@/components/custom-connect-wallet";
-import { useAccount, useWalletClient } from 'wagmi';
+import { useAccount, useWalletClient, useBalance } from 'wagmi';
 import { Account } from "viem";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TransactionResult {
   userOperationHash: string;
   transactionHash: string;
 }
+
+interface TokenInfo {
+  symbol: string;
+  name: string;
+  decimals: number;
+  address?: string;
+}
+
+const TOKENS: Record<string, TokenInfo> = {
+  eth: {
+    symbol: "ETH",
+    name: "Ethereum",
+    decimals: 18,
+  },
+  usdc: {
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+  },
+};
 
 export default function HomePage() {
   const { address, isConnected, chainId } = useAccount();
@@ -30,14 +57,20 @@ export default function HomePage() {
   const [isTestnet, setIsTestnet] = useState<boolean>(false);
   const [circleDeployment, setCircleDeployment] = useState<CircleAccountDeployment | null>(null);
   const [usdcBalance, setUsdcBalance] = useState<string>("");
+  const [ethBalance, setEthBalance] = useState<string>("");
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null);
   const [recipientAddress, setRecipientAddress] = useState<string>("");
   const [transactionAmount, setTransactionAmount] = useState<string>("");
-  const [transactionType, setTransactionType] = useState<"eth" | "usdc">("eth");
+  const [selectedToken, setSelectedToken] = useState<string>("eth");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const logRef = useRef<HTMLTextAreaElement | null>(null);
   const walletRef = useRef<CircleWalletConnect | null>(null);
+
+  // Get ETH balance using wagmi
+  const { data: ethBalanceData } = useBalance({
+    address: circleAccountAddress as `0x${string}`,
+  });
 
   // Auto-detect if current chain is testnet
   useEffect(() => {
@@ -47,6 +80,13 @@ export default function HomePage() {
       setIsTestnet(isCurrentChainTestnet);
     }
   }, [chainId]);
+
+  // Update ETH balance when balance data changes
+  useEffect(() => {
+    if (ethBalanceData) {
+      setEthBalance(ethBalanceData.formatted);
+    }
+  }, [ethBalanceData]);
 
   // Auto-create Circle deployment when wallet connects
   useEffect(() => {
@@ -98,10 +138,18 @@ export default function HomePage() {
           // Check USDC balance
           try {
             const balance = await deployment.checkUSDCBalance();
-            setUsdcBalance(balance.toString());
+            setUsdcBalance((BigInt(balance) / BigInt(10 ** 6)).toString());
+            if (logRef.current) {
+              logRef.current.value += `\n${new Date().toISOString()} | USDC balance fetched: ${balance.toString()}`;
+              logRef.current.scrollTop = logRef.current.scrollHeight;
+            }
           } catch (balanceError) {
             console.warn("Could not check USDC balance:", balanceError);
             setUsdcBalance("Unable to fetch");
+            if (logRef.current) {
+              logRef.current.value += `\n${new Date().toISOString()} | WARNING: Could not fetch USDC balance: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`;
+              logRef.current.scrollTop = logRef.current.scrollHeight;
+            }
           }
         }
 
@@ -373,7 +421,7 @@ export default function HomePage() {
       const amount = BigInt(transactionAmount);
       let result;
 
-      if (transactionType === "eth") {
+      if (selectedToken === "eth") {
         // Send ETH transaction
         result = await circleDeployment.sendTransaction(recipientAddress, amount);
       } else {
@@ -396,7 +444,36 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [circleDeployment, recipientAddress, transactionAmount, transactionType]);
+  }, [circleDeployment, recipientAddress, transactionAmount, selectedToken]);
+
+  // Get current token info and balance
+  const currentToken = TOKENS[selectedToken];
+  const currentBalance = selectedToken === "eth" ? ethBalance : usdcBalance;
+
+  // Function to refresh USDC balance
+  const refreshUSDCBalance = useCallback(async () => {
+    if (!circleDeployment) return;
+    
+    try {
+      setStatus("Refreshing USDC balance...");
+      const balance = await circleDeployment.checkUSDCBalance();
+      setUsdcBalance((BigInt(balance) / BigInt(10 ** 6)).toString());
+      setStatus("USDC balance refreshed!");
+      
+      if (logRef.current) {
+        logRef.current.value += `\n${new Date().toISOString()} | USDC balance refreshed: ${balance.toString()}`;
+        logRef.current.scrollTop = logRef.current.scrollHeight;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setStatus(`Failed to refresh USDC balance: ${errorMessage}`);
+      
+      if (logRef.current) {
+        logRef.current.value += `\n${new Date().toISOString()} | ERROR: Failed to refresh USDC balance: ${errorMessage}`;
+        logRef.current.scrollTop = logRef.current.scrollHeight;
+      }
+    }
+  }, [circleDeployment]);
 
   // Get chain name from chainId
   const getChainName = (chainId: number) => {
@@ -429,23 +506,23 @@ export default function HomePage() {
           
           {/* WalletConnect Input and Connect Button */}
           <div className="flex items-center space-x-4">
-  <div className="relative flex-1 min-w-80">
-    <input
-      value={uri}
-      onChange={(e) => setUri(e.target.value.trim())}
-      placeholder="wc:..."
-      className="w-full px-4 py-3 pr-32 bg-gray-800 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
-    />
-    <button
-      onClick={handleConnect}
-      disabled={!canConnect}
-      className="absolute right-1 top-1 bottom-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 font-mono disabled:cursor-not-allowed transition-colors rounded-sm"
-    >
-      Link
-    </button>
-  </div>
-  <CustomConnectButton />
-</div>
+            <div className="relative flex-1 min-w-80">
+              <input
+                value={uri}
+                onChange={(e) => setUri(e.target.value.trim())}
+                placeholder="wc:..."
+                className="w-full px-4 py-3 pr-32 bg-gray-800 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
+              />
+              <button
+                onClick={handleConnect}
+                disabled={!canConnect}
+                className="absolute right-1 top-1 bottom-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 font-mono disabled:cursor-not-allowed transition-colors rounded-sm"
+              >
+                Link
+              </button>
+            </div>
+            <CustomConnectButton />
+          </div>
         </div>
 
         {/* Status Bar */}
@@ -476,6 +553,11 @@ export default function HomePage() {
                     <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">Network</div>
                     <div className="font-mono text-gray-300">{getChainName(chainId)} ({chainId})</div>
                     <div className="text-sm text-gray-400">{isTestnet ? 'Testnet' : 'Mainnet'}</div>
+                    {circleDeployment && (
+                      <div className="text-xs text-gray-500 mt-2 font-mono">
+                        USDC: {circleDeployment.getChainInfo().usdcAddress}
+                      </div>
+                    )}
                   </div>
 
                   {circleAccountAddress && (
@@ -486,7 +568,21 @@ export default function HomePage() {
                   )}
 
                   <div className="bg-gray-900 border border-blue-500 p-4">
-                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">USDC Balance</div>
+                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">ETH Balance</div>
+                    <div className="font-mono text-gray-300">{ethBalance || "Loading..."}</div>
+                    <div className="text-sm text-gray-400">Native token</div>
+                  </div>
+
+                  <div className="bg-gray-900 border border-blue-500 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-blue-300 text-sm uppercase tracking-wider">USDC Balance</div>
+                      <button
+                        onClick={refreshUSDCBalance}
+                        className="text-blue-400 hover:text-blue-300 text-xs font-mono uppercase tracking-wider"
+                      >
+                        Refresh
+                      </button>
+                    </div>
                     <div className="font-mono text-gray-300">{usdcBalance || "Loading..."}</div>
                     <div className="text-sm text-gray-400">For gas payments</div>
                   </div>
@@ -510,30 +606,42 @@ export default function HomePage() {
               
               {isConnected && circleDeployment ? (
                 <div className="space-y-6">
-                  {/* Transaction Type Selection */}
+                  {/* Token Selection */}
                   <div>
                     <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
-                      Transaction Type
+                      Select Token
                     </label>
-                    <div className="flex space-x-4">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          checked={transactionType === "eth"}
-                          onChange={() => setTransactionType("eth")}
-                          className="mr-3 accent-blue-500"
-                        />
-                        <span className="text-gray-300 font-mono">ETH</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          checked={transactionType === "usdc"}
-                          onChange={() => setTransactionType("usdc")}
-                          className="mr-3 accent-blue-500"
-                        />
-                        <span className="text-gray-300 font-mono">USDC</span>
-                      </label>
+                    <Select value={selectedToken} onValueChange={setSelectedToken}>
+                      <SelectTrigger className="w-full bg-gray-900 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400">
+                        <SelectValue placeholder="Select a token" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 border border-blue-500">
+                        <SelectItem value="eth" className="text-gray-300 font-mono focus:bg-blue-900 focus:text-blue-300">
+                          <div className="flex items-center space-x-2">
+                            <span>ETH</span>
+                            <span className="text-gray-400">({ethBalance || "0"})</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="usdc" className="text-gray-300 font-mono focus:bg-blue-900 focus:text-blue-300">
+                          <div className="flex items-center space-x-2">
+                            <span>USDC</span>
+                            <span className="text-gray-400">({usdcBalance || "0"})</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Selected Token Balance */}
+                  <div className="bg-gray-900 border border-blue-500 p-4">
+                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">
+                      {currentToken?.name} Balance
+                    </div>
+                    <div className="font-mono text-gray-300 text-lg">
+                      {currentBalance || "Loading..."} {currentToken?.symbol}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Available for transactions
                     </div>
                   </div>
 
@@ -554,17 +662,19 @@ export default function HomePage() {
                   {/* Amount */}
                   <div>
                     <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
-                      Amount ({transactionType === "eth" ? "wei" : "USDC"})
+                      Amount ({currentToken?.symbol})
                     </label>
                     <input
                       type="text"
                       value={transactionAmount}
                       onChange={(e) => setTransactionAmount(e.target.value)}
-                      placeholder={transactionType === "eth" ? "1000000000000000000" : "1000000"}
+                      placeholder={currentToken?.decimals === 18 ? "1000000000000000000" : "1000000"}
                       className="w-full px-4 py-3 bg-gray-900 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
                     />
                     <div className="text-sm text-gray-400 mt-1">
-                      {transactionType === "eth" ? "1 ETH = 1000000000000000000 wei" : "1 USDC = 1000000 (6 decimals)"}
+                      {currentToken?.decimals === 18 
+                        ? "1 ETH = 1000000000000000000 wei" 
+                        : "1 USDC = 1000000 (6 decimals)"}
                     </div>
                   </div>
 
@@ -574,7 +684,7 @@ export default function HomePage() {
                     disabled={loading || !recipientAddress || !transactionAmount}
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-4 px-6 font-mono uppercase tracking-wider border border-blue-500 disabled:cursor-not-allowed transition-colors"
                   >
-                    {loading ? "Sending..." : `Send ${transactionType.toUpperCase()}`}
+                    {loading ? "Sending..." : `Send ${currentToken?.symbol}`}
                   </button>
 
                   {/* Transaction Result */}
