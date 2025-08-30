@@ -140,14 +140,14 @@ export default function HomePage() {
             const balance = await deployment.checkUSDCBalance();
             setUsdcBalance((BigInt(balance) / BigInt(10 ** 6)).toString());
             if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString()} | USDC balance fetched: ${balance.toString()}`;
+              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | USDC balance fetched: ${balance.toString()}`;
               logRef.current.scrollTop = logRef.current.scrollHeight;
             }
           } catch (balanceError) {
             console.warn("Could not check USDC balance:", balanceError);
             setUsdcBalance("Unable to fetch");
             if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString()} | WARNING: Could not fetch USDC balance: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`;
+              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WARNING: Could not fetch USDC balance: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`;
               logRef.current.scrollTop = logRef.current.scrollHeight;
             }
           }
@@ -156,8 +156,8 @@ export default function HomePage() {
         setStatus("Circle deployment created and configured automatically!");
         
         if (logRef.current) {
-          logRef.current.value += `\n${new Date().toISOString()} | Circle deployment created: ${accountAddress} on chain ${chainId} (${isTestnet ? 'testnet' : 'mainnet'})`;
-          logRef.current.value += `\n${new Date().toISOString()} | Circle account automatically set and configured`;
+          logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | Circle deployment created: ${accountAddress} on chain ${chainId} (${isTestnet ? 'testnet' : 'mainnet'})`;
+          logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | Circle account automatically set and configured`;
           logRef.current.scrollTop = logRef.current.scrollHeight;
         }
       } catch (error) {
@@ -195,7 +195,7 @@ export default function HomePage() {
             wallet.setNetworkType(isTestnet);
             
             if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString()} | WalletConnect configured with existing Circle deployment`;
+              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WalletConnect configured with existing Circle deployment`;
               logRef.current.scrollTop = logRef.current.scrollHeight;
             }
           }
@@ -203,7 +203,7 @@ export default function HomePage() {
           // Set up event listeners
           wallet.onSessionProposal((proposal) => {
             if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString()} | session_proposal from ${proposal.params.proposer.metadata.name}`;
+              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | session_proposal from ${proposal.params.proposer.metadata.name}`;
               logRef.current.scrollTop = logRef.current.scrollHeight;
             }
 
@@ -211,7 +211,7 @@ export default function HomePage() {
             const configStatus = wallet.getConfigurationStatus();
             if (!configStatus.isConfigured) {
               if (logRef.current) {
-                logRef.current.value += `\n${new Date().toISOString()} | WARNING: No Circle account configured. Session will be approved with placeholder account.`;
+                logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WARNING: No Circle account configured. Session will be approved with placeholder account.`;
                 logRef.current.scrollTop = logRef.current.scrollHeight;
               }
             }
@@ -219,14 +219,14 @@ export default function HomePage() {
             wallet.approveSession(proposal)
               .then(() => {
                 if (logRef.current) {
-                  logRef.current.value += `\n${new Date().toISOString()} | session approved successfully`;
+                  logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | session approved successfully`;
                   logRef.current.scrollTop = logRef.current.scrollHeight;
                 }
                 setStatus("Session approved! Check the dapp.");
               })
               .catch((err: unknown) => {
                 if (logRef.current) {
-                  logRef.current.value += `\n${new Date().toISOString()} | approve error: ${String(err instanceof Error ? err.message : err)}`;
+                  logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | approve error: ${String(err instanceof Error ? err.message : err)}`;
                   logRef.current.scrollTop = logRef.current.scrollHeight;
                 }
                 setStatus(`Session approval failed: ${String(err instanceof Error ? err.message : err)}`);
@@ -239,7 +239,7 @@ export default function HomePage() {
             if (logRef.current) {
               try {
                 const method = event?.params?.request?.method;
-                logRef.current.value += `\n${new Date().toISOString()} | [WalletConnect] Incoming request: ${method || 'unknown'} (topic: ${event.topic})`;
+                logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | [WalletConnect] Incoming request: ${method || 'unknown'} (topic: ${event.topic})`;
                 logRef.current.scrollTop = logRef.current.scrollHeight;
               } catch {}
             }
@@ -251,7 +251,7 @@ export default function HomePage() {
             );
             if (!activeTopics.has(event.topic)) {
               if (logRef.current) {
-                logRef.current.value += `\n${new Date().toISOString()} | WARNING: Ignoring request for unknown topic ${event.topic}. Active: ${Array.from(activeTopics).join(',') || 'none'}`;
+                logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WARNING: Ignoring request for unknown topic ${event.topic}. Active: ${Array.from(activeTopics).join(',') || 'none'}`;
                 logRef.current.scrollTop = logRef.current.scrollHeight;
               }
               return;
@@ -358,14 +358,14 @@ export default function HomePage() {
 
           wallet.onSessionDelete(() => {
             if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString()} | session deleted`;
+              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | session deleted`;
               logRef.current.scrollTop = logRef.current.scrollHeight;
             }
           });
 
           wallet.onProposalExpire(() => {
             if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString()} | proposal expired`;
+              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | proposal expired`;
               logRef.current.scrollTop = logRef.current.scrollHeight;
             }
           });
@@ -387,7 +387,7 @@ export default function HomePage() {
       walletRef.current.setNetworkType(isTestnet);
       
       if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString()} | WalletConnect updated with Circle deployment`;
+        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WalletConnect updated with Circle deployment`;
         logRef.current.scrollTop = logRef.current.scrollHeight;
       }
     }
@@ -435,7 +435,7 @@ export default function HomePage() {
       setStatus("Transaction sent successfully!");
       
       if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString()} | Transaction sent: ${result.transactionHash}`;
+        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | Transaction sent: ${result.transactionHash}`;
         logRef.current.scrollTop = logRef.current.scrollHeight;
       }
     } catch (err: any) {
@@ -461,7 +461,7 @@ export default function HomePage() {
       setStatus("USDC balance refreshed!");
       
       if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString()} | USDC balance refreshed: ${balance.toString()}`;
+        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | USDC balance refreshed: ${balance.toString()}`;
         logRef.current.scrollTop = logRef.current.scrollHeight;
       }
     } catch (error) {
@@ -469,7 +469,7 @@ export default function HomePage() {
       setStatus(`Failed to refresh USDC balance: ${errorMessage}`);
       
       if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString()} | ERROR: Failed to refresh USDC balance: ${errorMessage}`;
+        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | ERROR: Failed to refresh USDC balance: ${errorMessage}`;
         logRef.current.scrollTop = logRef.current.scrollHeight;
       }
     }
@@ -571,6 +571,9 @@ export default function HomePage() {
                     <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">ETH Balance</div>
                     <div className="font-mono text-gray-300">{ethBalance || "Loading..."}</div>
                     <div className="text-sm text-gray-400">Native token</div>
+                    <div className="text-xs text-blue-400 mt-1 font-mono">
+                      💡 No ETH needed for gas - pay with USDC instead!
+                    </div>
                   </div>
 
                   <div className="bg-gray-900 border border-blue-500 p-4">
@@ -584,7 +587,10 @@ export default function HomePage() {
                       </button>
                     </div>
                     <div className="font-mono text-gray-300">{usdcBalance || "Loading..."}</div>
-                    <div className="text-sm text-gray-400">For gas payments</div>
+                    <div className="text-sm text-gray-400">Available for transactions</div>
+                    <div className="text-xs text-green-400 mt-1 font-mono">
+                      ⚡ Gas fees paid in USDC via Circle Paymaster
+                    </div>
                   </div>
                 </div>
               )}
@@ -603,6 +609,18 @@ export default function HomePage() {
           <div className="lg:col-span-2">
             <div className="bg-gray-800 border border-blue-500 p-6">
               <h2 className="text-xl font-bold mb-6 text-blue-400 uppercase tracking-wider">Send Transaction</h2>
+              
+              {/* Circle Paymaster Info */}
+              <div className="bg-green-900 border border-green-500 p-4 mb-6">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-green-300 font-mono uppercase tracking-wider text-sm">Circle Paymaster Active</span>
+                </div>
+                <p className="text-green-200 text-sm font-mono">
+                  🎉 <strong>USDC Gas Payments:</strong> Send {currentToken?.symbol} and pay gas fees in USDC instead of ETH. 
+                  Circle Paymaster handles the gas payment automatically!
+                </p>
+              </div>
               
               {isConnected && circleDeployment ? (
                 <div className="space-y-6">
@@ -632,18 +650,7 @@ export default function HomePage() {
                     </Select>
                   </div>
 
-                  {/* Selected Token Balance */}
-                  <div className="bg-gray-900 border border-blue-500 p-4">
-                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">
-                      {currentToken?.name} Balance
-                    </div>
-                    <div className="font-mono text-gray-300 text-lg">
-                      {currentBalance || "Loading..."} {currentToken?.symbol}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      Available for transactions
-                    </div>
-                  </div>
+                  
 
                   {/* Recipient Address */}
                   <div>
@@ -682,9 +689,9 @@ export default function HomePage() {
                   <button
                     onClick={sendTransaction}
                     disabled={loading || !recipientAddress || !transactionAmount}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-4 px-6 font-mono uppercase tracking-wider border border-blue-500 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white py-4 px-6 font-mono uppercase tracking-wider border border-green-500 disabled:cursor-not-allowed transition-colors"
                   >
-                    {loading ? "Sending..." : `Send ${currentToken?.symbol}`}
+                    {loading ? "Sending..." : `Send ${currentToken?.symbol} (USDC Gas)`}
                   </button>
 
                   {/* Transaction Result */}
@@ -723,6 +730,31 @@ export default function HomePage() {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Circle Paymaster Benefits */}
+        <div className="mt-8">
+          <div className="bg-gray-800 border border-blue-500 p-6">
+            <h3 className="text-lg font-bold mb-4 text-blue-400 uppercase tracking-wider">Circle Paymaster Benefits</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300 font-mono text-sm">
+              <div className="bg-gray-900 border border-blue-500 p-4">
+                <div className="text-blue-400 font-bold mb-2">⚡ No ETH Required</div>
+                <p>Send transactions without holding any ETH. Circle Paymaster pays gas fees in USDC automatically.</p>
+              </div>
+              <div className="bg-gray-900 border border-blue-500 p-4">
+                <div className="text-blue-400 font-bold mb-2">💎 USDC Gas Payments</div>
+                <p>Gas fees are paid in USDC, making it easier to manage your transaction costs.</p>
+              </div>
+              <div className="bg-gray-900 border border-blue-500 p-4">
+                <div className="text-blue-400 font-bold mb-2">🎯 Seamless Experience</div>
+                <p>No need to worry about ETH for gas. Gas fees are automatically paid in USDC!</p>
+              </div>
+              <div className="bg-gray-900 border border-blue-500 p-4">
+                <div className="text-blue-400 font-bold mb-2">🔒 Secure & Reliable</div>
+                <p>Built on ERC-4337 Account Abstraction standard with Circle's trusted infrastructure.</p>
+              </div>
             </div>
           </div>
         </div>
