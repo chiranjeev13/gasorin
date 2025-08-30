@@ -55,7 +55,7 @@ const CustomConnectButton = () => {
                   <Button
                     onClick={openConnectModal}
                     variant="ghost"
-                    className="hover:bg-gray-100 hover:text-white cursor-pointer rounded-none px-3 py-2 transition-colors text-white border border-gray-600/50"
+                    className="hover:bg-blue-600 hover:text-white cursor-pointer border border-blue-500 px-6 py-3 transition-colors text-blue-400 font-mono uppercase tracking-wider bg-gray-800 hover:bg-blue-600"
                   >
                     Connect Wallet
                   </Button>
@@ -65,8 +65,8 @@ const CustomConnectButton = () => {
               return (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex text-white items-center gap-2 bg-muted hover:bg-muted/80 rounded-none py-0.5 pl-0.5 pr-4 border-0 border-gray-600/50 transition-colors">
-                      <div className="w-8 h-8 rounded-none">
+                    <button className="flex text-blue-300 items-center gap-3 bg-gray-800 hover:bg-gray-700 border border-blue-500 py-3 pl-3 pr-6 transition-colors font-mono uppercase tracking-wider">
+                      <div className="w-8 h-8 border border-blue-500">
                         <Image
                           src="/1.png"
                           className="w-full h-full"
@@ -75,27 +75,27 @@ const CustomConnectButton = () => {
                           alt="Profile_Image"
                         />
                       </div>
-                      <span className="text-sm capitalize font-semibold text-muted-foreground">
+                      <span className="text-sm font-mono uppercase tracking-wider text-blue-300">
                         {account.displayName}
                       </span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-black rounded-none">
+                  <DropdownMenuContent align="end" className="w-56 bg-gray-900 border border-blue-500">
                     <DropdownMenuItem
                       onClick={() => copyAddress(account.address)}
-                      className="cursor-pointer"
+                      className="cursor-pointer text-blue-300 hover:bg-gray-800 hover:text-blue-400 font-mono"
                     >
                       <Copy className="mr-2 h-4 w-4" />
                       Copy Address
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleAccountDetails} className="cursor-pointer">
+                    <DropdownMenuItem onClick={handleAccountDetails} className="cursor-pointer text-blue-300 hover:bg-gray-800 hover:text-blue-400 font-mono">
                       <User className="mr-2 h-4 w-4" />
                       Account Details
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="bg-blue-500" />
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="cursor-pointer text-red-600"
+                      className="cursor-pointer text-red-400 hover:bg-gray-800 hover:text-red-300 font-mono"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout

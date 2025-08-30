@@ -16,19 +16,27 @@ import { useAccount, useWalletClient } from 'wagmi';
 import { Account } from "viem";
 
 export default function HomePage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const [activeTab, setActiveTab] = useState<"walletconnect" | "deployment">("walletconnect");
+  const [activeTab, setActiveTab] = useState<"walletconnect" | "deployment">("deployment");
   const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
   const [uri, setUri] = useState<string>("");
   const [status, setStatus] = useState<string>("Idle");
   const [initialized, setInitialized] = useState<boolean>(false);
   const [circleAccountAddress, setCircleAccountAddress] = useState<string>("");
-  const [chainId, setChainId] = useState<string>("1");
   const [isTestnet, setIsTestnet] = useState<boolean>(false);
   const [circleDeployment, setCircleDeployment] = useState<CircleAccountDeployment | null>(null);
   const logRef = useRef<HTMLTextAreaElement | null>(null);
   const walletRef = useRef<CircleWalletConnect | null>(null);
+
+  // Auto-detect if current chain is testnet
+  useEffect(() => {
+    if (chainId) {
+      const testnetChainIds = ['11155111', '80001', '11155420', '421614', '84532', '43113'];
+      const isCurrentChainTestnet = testnetChainIds.includes(chainId.toString());
+      setIsTestnet(isCurrentChainTestnet);
+    }
+  }, [chainId]);
 
   useEffect(() => {
     if (!initialized && projectId && activeTab === "walletconnect") {
@@ -124,6 +132,7 @@ export default function HomePage() {
                 wcTx?.method === 'eth_hashrate' ||
                 wcTx?.method === 'eth_gasPrice' ||
                 wcTx?.method === 'eth_accounts' ||
+                wcTx?.method === 'eth_blockNumber' ||
                 wcTx?.method === 'eth_getBlockTransactionCountByHash' ||
                 wcTx?.method === 'eth_getBlockTransactionCountByNumber' ||
                 wcTx?.method === 'eth_newFilter' ||
@@ -234,10 +243,10 @@ export default function HomePage() {
   }, [uri]);
 
   const handleSetCircleAccount = useCallback(() => {
-    if (!walletRef.current) return;
+    if (!walletRef.current || !chainId) return;
 
     walletRef.current.setCircleAccountAddress(circleAccountAddress);
-    walletRef.current.setChainId(chainId);
+    walletRef.current.setChainId(chainId.toString());
     walletRef.current.setNetworkType(isTestnet);
 
     if (logRef.current) {
@@ -247,7 +256,7 @@ export default function HomePage() {
   }, [circleAccountAddress, chainId, isTestnet]);
 
   const handleCreateCircleDeployment = useCallback(async () => {
-    if (!isConnected || !address || !walletRef.current) {
+    if (!isConnected || !address || !walletRef.current || !chainId) {
       setStatus("Please connect your wallet first");
       return;
     }
@@ -280,8 +289,8 @@ export default function HomePage() {
         },
       } as unknown as Account;
       
-      // Create Circle deployment instance
-      const deployment = new CircleAccountDeployment(ownerAccount, chainId, isTestnet);
+      // Create Circle deployment instance using current chain
+      const deployment = new CircleAccountDeployment(ownerAccount, chainId.toString(), isTestnet);
       await deployment.initializeAccount();
       
       setCircleDeployment(deployment);
@@ -321,19 +330,32 @@ export default function HomePage() {
   const configStatus = walletRef.current?.getConfigurationStatus();
   const circleClientInfo = circleDeployment?.getCircleClient();
 
-  // Get available chains based on network type
-  const availableChains = useMemo(() => {
-    if (!allSupportedChains) return {};
-    return isTestnet ? allSupportedChains.testnet : allSupportedChains.mainnet;
-  }, [allSupportedChains, isTestnet]);
+  // Get chain name from chainId
+  const getChainName = (chainId: number) => {
+    const chainNames: Record<number, string> = {
+      1: 'Ethereum',
+      137: 'Polygon',
+      10: 'Optimism',
+      42161: 'Arbitrum',
+      8453: 'Base',
+      43114: 'Avalanche',
+      11155111: 'Sepolia',
+      80001: 'Mumbai',
+      11155420: 'Optimism Sepolia',
+      421614: 'Arbitrum Sepolia',
+      84532: 'Base Sepolia',
+      43113: 'Fuji',
+    };
+    return chainNames[chainId] || `Chain ${chainId}`;
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-900">
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
           <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Circle Smart Account Platform</h1>
-            <p className="text-xl text-gray-600">Deploy and connect Circle Smart Accounts with USDC gas payments</p>
+            <h1 className="text-4xl font-bold text-blue-400 mb-2 uppercase tracking-wider">Circle Smart Account Platform</h1>
+            <p className="text-xl text-gray-300 font-mono">Deploy and connect Circle Smart Accounts with USDC gas payments</p>
           </div>
           <div className="ml-4">
             <CustomConnectButton />
@@ -342,23 +364,23 @@ export default function HomePage() {
 
         {/* Tab Navigation */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-1">
+          <div className="bg-gray-800 border border-blue-500 p-1">
             <button
               onClick={() => setActiveTab("deployment")}
-              className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              className={`px-6 py-3 font-mono uppercase tracking-wider transition-colors ${
                 activeTab === "deployment"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-blue-600 text-white border border-blue-500"
+                  : "text-gray-300 hover:text-blue-400"
               }`}
             >
               Account Deployment
             </button>
             <button
               onClick={() => setActiveTab("walletconnect")}
-              className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              className={`px-6 py-3 font-mono uppercase tracking-wider transition-colors ${
                 activeTab === "walletconnect"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-blue-600 text-white border border-blue-500"
+                  : "text-gray-300 hover:text-blue-400"
               }`}
             >
               WalletConnect
@@ -371,20 +393,20 @@ export default function HomePage() {
           <CircleDeployment />
         ) : (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-bold mb-4">Circle Smart Account WalletConnect</h2>
-              <p className="text-gray-600 mb-6">Connect dapps to your Circle Smart Account with USDC gas payments.</p>
+            <div className="bg-gray-900 border border-blue-500 p-8">
+              <h2 className="text-3xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Circle Smart Account WalletConnect</h2>
+              <p className="text-gray-300 mb-8 font-mono">Connect dapps to your Circle Smart Account with USDC gas payments.</p>
 
               {!process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID && (
-                <div className="p-4 border border-yellow-300 bg-yellow-50 rounded-lg mb-6">
-                  <strong>Warning:</strong> Set <code>NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> in your env.
+                <div className="p-4 border border-yellow-500 bg-yellow-900 mb-6">
+                  <strong className="text-yellow-300">Warning:</strong> <span className="text-yellow-200">Set <code className="bg-gray-800 px-2 py-1">NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> in your env.</span>
                 </div>
               )}
 
               {paymasterInfo && (
-                <div className="p-4 border border-green-300 bg-green-50 rounded-lg mb-6">
-                  <strong>Circle Paymaster Info:</strong>
-                  <ul className="mt-2 space-y-1">
+                <div className="p-4 border border-green-500 bg-green-900 mb-6">
+                  <strong className="text-green-300">Circle Paymaster Info:</strong>
+                  <ul className="mt-2 space-y-1 text-green-200 font-mono text-sm">
                     <li>Network: {paymasterInfo.networkType}</li>
                     <li>Description: {paymasterInfo.description}</li>
                     <li>Pricing: {paymasterInfo.pricing}</li>
@@ -394,29 +416,29 @@ export default function HomePage() {
                 </div>
               )}
 
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4">Wallet Status</h3>
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Wallet Status</h3>
                 
                 {!isConnected && (
-                  <div className="p-4 border border-yellow-300 bg-yellow-50 rounded-lg">
-                    <p className="text-yellow-800">
+                  <div className="p-4 border border-yellow-500 bg-yellow-900">
+                    <p className="text-yellow-200 font-mono">
                       Please connect your wallet using the Connect Wallet button in the header to create a Circle deployment.
                     </p>
                   </div>
                 )}
                 
                 {isConnected && (
-                  <div className="p-4 border border-green-300 bg-green-50 rounded-lg">
-                    <p className="text-green-800">
+                  <div className="p-4 border border-green-500 bg-green-900">
+                    <p className="text-green-200 font-mono">
                       ✅ Wallet connected: {address}
                     </p>
                     {walletClient && (
-                      <p className="text-green-700 text-sm mt-1">
+                      <p className="text-green-300 text-sm mt-1 font-mono">
                         ✅ Wallet client ready
                       </p>
                     )}
                     {!walletClient && (
-                      <p className="text-yellow-700 text-sm mt-1">
+                      <p className="text-yellow-300 text-sm mt-1 font-mono">
                         ⚠️ Wallet client not available
                       </p>
                     )}
@@ -424,112 +446,92 @@ export default function HomePage() {
                 )}
               </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Network Type
-                </label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={!isTestnet}
-                      onChange={() => setIsTestnet(false)}
-                      className="mr-2"
-                    />
-                    Mainnet
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={isTestnet}
-                      onChange={() => setIsTestnet(true)}
-                      className="mr-2"
-                    />
-                    Testnet
-                  </label>
+              {/* Current Network Display */}
+              {isConnected && chainId && (
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Current Network</h3>
+                  <div className="p-4 border border-blue-500 bg-blue-900">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-300 font-mono">
+                      <div>
+                        <span className="text-blue-400 uppercase tracking-wider text-sm">Chain:</span>
+                        <div className="mt-1">{getChainName(chainId)}</div>
+                      </div>
+                      <div>
+                        <span className="text-blue-400 uppercase tracking-wider text-sm">Chain ID:</span>
+                        <div className="mt-1">{chainId}</div>
+                      </div>
+                      <div>
+                        <span className="text-blue-400 uppercase tracking-wider text-sm">Network Type:</span>
+                        <div className="mt-1">{isTestnet ? 'Testnet' : 'Mainnet'}</div>
+                      </div>
+                      <div>
+                        <span className="text-blue-400 uppercase tracking-wider text-sm">Status:</span>
+                        <div className="mt-1 text-green-400">Active</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="mb-6">
+              <div className="mb-8">
                 <button
                   onClick={handleCreateCircleDeployment}
-                  disabled={!isConnected || !walletClient || !initialized}
-                  className="w-full md:w-auto bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed mb-4"
+                  disabled={!isConnected || !walletClient || !initialized || !chainId}
+                  className="w-full md:w-auto bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-6 py-3 font-mono uppercase tracking-wider border border-green-500 disabled:cursor-not-allowed transition-colors mb-4"
                 >
                   Create Circle Deployment
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Circle Smart Account Address
-                  </label>
-                  <input
-                    value={circleAccountAddress}
-                    onChange={(e) => setCircleAccountAddress(e.target.value.trim())}
-                    placeholder="0x..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chain ID
-                  </label>
-                  <select
-                    value={chainId}
-                    onChange={(e) => setChainId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Object.entries(availableChains || {}).map(([chainId, chainName]) => (
-                      <option key={chainId} value={chainId.replace('eip155:', '')}>
-                        {String(chainName)} ({chainId.replace('eip155:', '')})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="mb-8">
+                <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
+                  Circle Smart Account Address
+                </label>
+                <input
+                  value={circleAccountAddress}
+                  onChange={(e) => setCircleAccountAddress(e.target.value.trim())}
+                  placeholder="0x..."
+                  className="w-full px-4 py-3 bg-gray-800 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
+                />
               </div>
-
-
 
               <button
                 onClick={handleSetCircleAccount}
-                disabled={!circleAccountAddress}
-                className="w-full md:w-auto bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed mb-6"
+                disabled={!circleAccountAddress || !chainId}
+                className="w-full md:w-auto bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 text-white px-6 py-3 font-mono uppercase tracking-wider border border-gray-500 disabled:cursor-not-allowed transition-colors mb-8"
               >
                 Set Circle Account
               </button>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-8">
+                <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
                   WalletConnect URI
                 </label>
                 <input
                   value={uri}
                   onChange={(e) => setUri(e.target.value.trim())}
                   placeholder="wc:..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-800 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
                 />
               </div>
 
               <button
                 onClick={handleConnect}
                 disabled={!canConnect}
-                className="w-full md:w-auto bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed mb-6"
+                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-3 font-mono uppercase tracking-wider border border-blue-500 disabled:cursor-not-allowed transition-colors mb-8"
               >
                 Connect
               </button>
 
-              <div className="flex items-center gap-2 mb-6">
-                <span className="text-sm font-medium">Status:</span>
-                <code className="text-sm bg-gray-100 px-2 py-1 rounded">{status}</code>
+              <div className="flex items-center gap-2 mb-8">
+                <span className="text-sm font-medium text-blue-300 uppercase tracking-wider">Status:</span>
+                <code className="text-sm bg-gray-800 px-3 py-2 border border-blue-500 text-gray-300 font-mono">{status}</code>
               </div>
 
               {networkConfig && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <h4 className="font-semibold text-blue-800 mb-2">Current Network Configuration</h4>
-                  <ul className="text-blue-700 text-sm space-y-1">
+                <div className="bg-blue-900 border border-blue-500 p-6 mb-8">
+                  <h4 className="font-bold text-blue-400 mb-4 uppercase tracking-wider">Current Network Configuration</h4>
+                  <ul className="text-blue-300 text-sm space-y-2 font-mono">
                     <li>Chain ID: {networkConfig.chainId}</li>
                     <li>Network: {networkConfig.isTestnet ? 'Testnet' : 'Mainnet'}</li>
                     <li>Account: {networkConfig.circleAccountAddress || 'Not set'}</li>
@@ -539,18 +541,18 @@ export default function HomePage() {
               )}
 
               {configStatus && (
-                <div className={`border rounded-lg p-4 mb-6 ${
+                <div className={`border p-6 mb-8 ${
                   configStatus.isConfigured 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-yellow-50 border-yellow-200'
+                    ? 'bg-green-900 border-green-500' 
+                    : 'bg-yellow-900 border-yellow-500'
                 }`}>
-                  <h4 className={`font-semibold mb-2 ${
-                    configStatus.isConfigured ? 'text-green-800' : 'text-yellow-800'
+                  <h4 className={`font-bold mb-4 uppercase tracking-wider ${
+                    configStatus.isConfigured ? 'text-green-400' : 'text-yellow-400'
                   }`}>
                     Configuration Status
                   </h4>
-                  <ul className={`text-sm space-y-1 ${
-                    configStatus.isConfigured ? 'text-green-700' : 'text-yellow-700'
+                  <ul className={`text-sm space-y-2 font-mono ${
+                    configStatus.isConfigured ? 'text-green-300' : 'text-yellow-300'
                   }`}>
                     <li>Status: {configStatus.isConfigured ? '✅ Configured' : '⚠️ Not Configured'}</li>
                     <li>Circle Account: {configStatus.hasCircleAccount ? '✅ Set' : '❌ Not Set'}</li>
@@ -559,12 +561,12 @@ export default function HomePage() {
                     <li>Network: {configStatus.isTestnet ? 'Testnet' : 'Mainnet'}</li>
                   </ul>
                   {!configStatus.isConfigured && (
-                    <p className="text-yellow-700 text-sm mt-2">
+                    <p className="text-yellow-300 text-sm mt-4 font-mono">
                       ⚠️ Set your Circle Smart Account address before connecting to dapps for the best experience.
                     </p>
                   )}
                   {!circleDeployment && (
-                    <p className="text-blue-700 text-sm mt-2">
+                    <p className="text-blue-300 text-sm mt-4 font-mono">
                       💡 Create a Circle deployment to enable transaction sending with USDC gas payments.
                     </p>
                   )}
@@ -572,43 +574,43 @@ export default function HomePage() {
               )}
 
               {circleClientInfo && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-                  <h4 className="font-semibold text-purple-800 mb-2">Circle Client Information</h4>
-                  <ul className="text-purple-700 text-sm space-y-1">
-                    <li>Account Address: <span className="font-mono break-all">{circleClientInfo.getAccountAddress()}</span></li>
+                <div className="bg-purple-900 border border-purple-500 p-6 mb-8">
+                  <h4 className="font-bold text-purple-400 mb-4 uppercase tracking-wider">Circle Client Information</h4>
+                  <ul className="text-purple-300 text-sm space-y-2 font-mono">
+                    <li>Account Address: <span className="break-all">{circleClientInfo.getAccountAddress()}</span></li>
                     <li>Chain ID: {circleClientInfo.chainId}</li>
                     <li>Network: {circleClientInfo.isTestnet ? 'Testnet' : 'Mainnet'}</li>
                     <li>Client Status: ✅ Active</li>
                   </ul>
-                  <p className="text-purple-700 text-sm mt-2">
+                  <p className="text-purple-300 text-sm mt-4 font-mono">
                     💡 This Circle client is ready to handle transactions with USDC gas payments.
                   </p>
                 </div>
               )}
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-8">
+                <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
                   Event Log
                 </label>
                 <textarea
                   ref={logRef}
                   rows={10}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  className="w-full px-4 py-3 bg-gray-800 border border-blue-500 text-gray-300 font-mono text-sm focus:outline-none focus:border-blue-400"
                   readOnly
                 />
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-600 text-sm">
+              <div className="bg-gray-800 border border-blue-500 p-6">
+                <p className="text-gray-300 text-sm font-mono mb-4">
                   This wallet connects to Circle Smart Accounts and supports USDC gas payments via Circle Paymaster.
-                  Set your Circle Smart Account address, network type, and chain ID before connecting to dapps.
+                  The network is automatically detected from your connected wallet.
                   Testnet connections are free and perfect for development and testing.
                 </p>
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-                  <h5 className="font-semibold text-blue-800 mb-2">Circle Integration Guide:</h5>
-                  <ol className="text-blue-700 text-sm space-y-1">
+                <div className="p-4 bg-blue-900 border border-blue-500">
+                  <h5 className="font-bold text-blue-400 mb-4 uppercase tracking-wider">Circle Integration Guide:</h5>
+                  <ol className="text-blue-300 text-sm space-y-2 font-mono">
                     <li>1. Connect your wallet using the Connect Wallet button above</li>
-                    <li>2. Select network type (testnet recommended for testing)</li>
+                    <li>2. The network type is automatically detected from your wallet</li>
                     <li>3. Click "Create Circle Deployment" to initialize the Circle client</li>
                     <li>4. The Circle Smart Account address will be automatically set</li>
                     <li>5. Connect to dapps - transactions will use USDC for gas payments</li>
