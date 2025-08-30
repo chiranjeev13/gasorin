@@ -24,7 +24,7 @@ import {
   arbitrumSepolia as arbitrumSepoliaChain,
   avalancheFuji,
 } from "viem/chains";
-import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
+
 import { toCircleSmartAccount } from "@circle-fin/modular-wallets-core";
 import { createBundlerClient } from "viem/account-abstraction";
 
@@ -216,28 +216,28 @@ export const eip2612Abi = [
 
 export class CircleAccountDeployment {
   private client: PublicClient;
-  private owner: PrivateKeyAccount;
+  private owner: Account;
   private account: Account | null = null;
   private chainId: string;
   private isTestnet: boolean;
 
-  constructor(privateKey: string, chainId: string, isTestnet: boolean = false) {
+  constructor(owner: Account, chainId: string, isTestnet: boolean = false) {
     this.chainId = chainId;
     this.isTestnet = isTestnet;
+    this.owner = owner;
 
     const chain = this.getChain(chainId);
     this.client = createPublicClient({ chain, transport: http() });
-    this.owner = privateKeyToAccount(privateKey as `0x${string}`);
   }
 
   // Static method to create a Circle client instance
   static async createCircleClient(
-    privateKey: string,
+    owner: Account,
     chainId: string,
     isTestnet: boolean = false
   ): Promise<CircleAccountDeployment> {
     const deployment = new CircleAccountDeployment(
-      privateKey,
+      owner,
       chainId,
       isTestnet
     );
@@ -396,7 +396,9 @@ export class CircleAccountDeployment {
         "Account not initialized. Call initializeAccount() first."
       );
     }
+    // @ts-ignore
     const wrappedPermitSignature = await this.account.signTypedData(
+      // @ts-ignore
       permitData as unknown as Parameters<typeof this.account.signTypedData>[0]
     );
     const { signature } = parseErc6492Signature(wrappedPermitSignature);
