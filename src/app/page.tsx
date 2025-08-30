@@ -8,17 +8,20 @@ import React, {
   useState,
 } from "react";
 import { CircleWalletConnect } from "@/lib/walletconnect";
-import CircleDeployment from "@/components/CircleDeployment";
 import { formatJsonRpcResult, formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import { CircleAccountDeployment } from "@/lib/circle-deployment";
 import CustomConnectButton from "@/components/custom-connect-wallet";
 import { useAccount, useWalletClient } from 'wagmi';
 import { Account } from "viem";
 
+interface TransactionResult {
+  userOperationHash: string;
+  transactionHash: string;
+}
+
 export default function HomePage() {
   const { address, isConnected, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const [activeTab, setActiveTab] = useState<"walletconnect" | "deployment">("deployment");
   const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
   const [uri, setUri] = useState<string>("");
   const [status, setStatus] = useState<string>("Idle");
@@ -26,6 +29,13 @@ export default function HomePage() {
   const [circleAccountAddress, setCircleAccountAddress] = useState<string>("");
   const [isTestnet, setIsTestnet] = useState<boolean>(false);
   const [circleDeployment, setCircleDeployment] = useState<CircleAccountDeployment | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<string>("");
+  const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null);
+  const [recipientAddress, setRecipientAddress] = useState<string>("");
+  const [transactionAmount, setTransactionAmount] = useState<string>("");
+  const [transactionType, setTransactionType] = useState<"eth" | "usdc">("eth");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const logRef = useRef<HTMLTextAreaElement | null>(null);
   const walletRef = useRef<CircleWalletConnect | null>(null);
 
@@ -38,7 +48,7 @@ export default function HomePage() {
     }
   }, [chainId]);
 
-  // Auto-create Circle deployment when wallet connects (regardless of tab)
+  // Auto-create Circle deployment when wallet connects
   useEffect(() => {
     const createDeployment = async () => {
       if (!isConnected || !address || !walletClient || !chainId || circleDeployment) {
@@ -84,6 +94,15 @@ export default function HomePage() {
             walletRef.current.setChainId(chainId.toString());
             walletRef.current.setNetworkType(isTestnet);
           }
+
+          // Check USDC balance
+          try {
+            const balance = await deployment.checkUSDCBalance();
+            setUsdcBalance(balance.toString());
+          } catch (balanceError) {
+            console.warn("Could not check USDC balance:", balanceError);
+            setUsdcBalance("Unable to fetch");
+          }
         }
 
         setStatus("Circle deployment created and configured automatically!");
@@ -95,7 +114,8 @@ export default function HomePage() {
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        setStatus(`Failed to create Circle deployment: ${errorMessage}`);
+        setError(`Failed to create Circle deployment: ${errorMessage}`);
+        setStatus("Failed to create Circle deployment");
         if (logRef.current) {
           logRef.current.value += `\n${new Date().toISOString()} | ERROR: Failed to create Circle deployment: ${errorMessage}`;
           logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -106,9 +126,9 @@ export default function HomePage() {
     createDeployment();
   }, [isConnected, address, walletClient, chainId, isTestnet, circleDeployment]);
 
-  // Initialize WalletConnect when on WalletConnect tab
+  // Initialize WalletConnect
   useEffect(() => {
-    if (!initialized && projectId && activeTab === "walletconnect") {
+    if (!initialized && projectId) {
       setStatus("Initializing Wallet...");
       const wallet = new CircleWalletConnect(projectId);
       walletRef.current = wallet;
@@ -177,7 +197,7 @@ export default function HomePage() {
             }
             // Route all requests here
             const wcTx = event.params.request;
-            // Verify session topic exists before processing (see Reown expected errors docs)
+            // Verify session topic exists before processing
             const activeTopics = new Set(
               (wallet.getActiveSessions() as Array<{ topic?: string }>).map((s) => s.topic).filter(Boolean) as string[]
             );
@@ -245,7 +265,6 @@ export default function HomePage() {
 
             // EIP-712 support
             if (wcTx?.method === 'eth_signTypedData' || wcTx?.method === 'eth_signTypedData_v4') {
-              // For now, return an error since we need to implement signing
               const errorResponse = formatJsonRpcError(Number(event.id), {
                 code: -32601,
                 message: "Method not implemented: EIP-712 signing not yet supported"
@@ -273,7 +292,6 @@ export default function HomePage() {
 
             // Handle eth_sign and personal_sign
             if (wcTx?.method === 'eth_sign' || wcTx?.method === 'personal_sign') {
-              // For now, return an error since we need to implement signing
               const errorResponse = formatJsonRpcError(Number(event.id), {
                 code: -32601,
                 message: "Method not implemented: Signing not yet supported"
@@ -309,7 +327,7 @@ export default function HomePage() {
           setStatus(`Init error: ${String(err instanceof Error ? err.message : err)}`);
         });
     }
-  }, [initialized, projectId, activeTab, circleDeployment, circleAccountAddress, chainId, isTestnet]);
+  }, [initialized, projectId, circleDeployment, circleAccountAddress, chainId, isTestnet]);
 
   // Update WalletConnect wallet when Circle deployment changes
   useEffect(() => {
@@ -341,11 +359,44 @@ export default function HomePage() {
     }
   }, [uri]);
 
-  const paymasterInfo = walletRef.current?.getPaymasterInfo();
-  const networkConfig = walletRef.current?.getNetworkConfig();
-  const allSupportedChains = walletRef.current?.getAllSupportedChains();
-  const configStatus = walletRef.current?.getConfigurationStatus();
-  const circleClientInfo = circleDeployment?.getCircleClient();
+  const sendTransaction = useCallback(async () => {
+    if (!circleDeployment || !recipientAddress || !transactionAmount) {
+      setError("Missing recipient address or transaction amount");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setStatus("Sending transaction...");
+      
+      const amount = BigInt(transactionAmount);
+      let result;
+
+      if (transactionType === "eth") {
+        // Send ETH transaction
+        result = await circleDeployment.sendTransaction(recipientAddress, amount);
+      } else {
+        // Send USDC transaction (this would need to be implemented in CircleDeployment)
+        setError("USDC transactions not yet implemented");
+        setLoading(false);
+        return;
+      }
+
+      setTransactionResult(result);
+      setStatus("Transaction sent successfully!");
+      
+      if (logRef.current) {
+        logRef.current.value += `\n${new Date().toISOString()} | Transaction sent: ${result.transactionHash}`;
+        logRef.current.scrollTop = logRef.current.scrollHeight;
+      }
+    } catch (err: any) {
+      setError(`Failed to send transaction: ${err.message}`);
+      setStatus("Transaction failed");
+    } finally {
+      setLoading(false);
+    }
+  }, [circleDeployment, recipientAddress, transactionAmount, transactionType]);
 
   // Get chain name from chainId
   const getChainName = (chainId: number) => {
@@ -369,279 +420,215 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-gray-900">
       <div className="max-w-6xl mx-auto p-6">
+        {/* Header with WalletConnect and Connect Button */}
         <div className="flex justify-between items-center mb-8">
-          <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold text-blue-400 mb-2 uppercase tracking-wider">Circle Smart Account Platform</h1>
-            <p className="text-xl text-gray-300 font-mono">Deploy and connect Circle Smart Accounts with USDC gas payments</p>
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold text-blue-400 mb-2 uppercase tracking-wider">Circle Smart Account</h1>
+            <p className="text-xl text-gray-300 font-mono">Send transactions with USDC gas payments</p>
           </div>
-          <div className="ml-4">
-            <CustomConnectButton />
+          
+          {/* WalletConnect Input and Connect Button */}
+          <div className="flex items-center space-x-4">
+  <div className="relative flex-1 min-w-80">
+    <input
+      value={uri}
+      onChange={(e) => setUri(e.target.value.trim())}
+      placeholder="wc:..."
+      className="w-full px-4 py-3 pr-32 bg-gray-800 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
+    />
+    <button
+      onClick={handleConnect}
+      disabled={!canConnect}
+      className="absolute right-1 top-1 bottom-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 font-mono disabled:cursor-not-allowed transition-colors rounded-sm"
+    >
+      Link
+    </button>
+  </div>
+  <CustomConnectButton />
+</div>
+        </div>
+
+        {/* Status Bar */}
+        <div className="bg-gray-800 border border-blue-500 p-4 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className={`w-3 h-3 rounded-full ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
+              <span className="text-blue-300 font-mono uppercase text-sm">
+                {status || (loading ? "Processing..." : "Ready")}
+              </span>
+            </div>
+            <div className="text-gray-400 font-mono text-sm">
+              {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not Connected"}
+            </div>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-gray-800 border border-blue-500 p-1">
-            <button
-              onClick={() => setActiveTab("deployment")}
-              className={`px-6 py-3 font-mono uppercase tracking-wider transition-colors ${
-                activeTab === "deployment"
-                  ? "bg-blue-600 text-white border border-blue-500"
-                  : "text-gray-300 hover:text-blue-400"
-              }`}
-            >
-              Account Deployment
-            </button>
-            <button
-              onClick={() => setActiveTab("walletconnect")}
-              className={`px-6 py-3 font-mono uppercase tracking-wider transition-colors ${
-                activeTab === "walletconnect"
-                  ? "bg-blue-600 text-white border border-blue-500"
-                  : "text-gray-300 hover:text-blue-400"
-              }`}
-            >
-              WalletConnect
-            </button>
-          </div>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === "deployment" ? (
-          <CircleDeployment />
-        ) : (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gray-900 border border-blue-500 p-8">
-              <h2 className="text-3xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Circle Smart Account WalletConnect</h2>
-              <p className="text-gray-300 mb-8 font-mono">Connect dapps to your Circle Smart Account with USDC gas payments.</p>
-
-              {!process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID && (
-                <div className="p-4 border border-yellow-500 bg-yellow-900 mb-6">
-                  <strong className="text-yellow-300">Warning:</strong> <span className="text-yellow-200">Set <code className="bg-gray-800 px-2 py-1">NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> in your env.</span>
-                </div>
-              )}
-
-              {paymasterInfo && (
-                <div className="p-4 border border-green-500 bg-green-900 mb-6">
-                  <strong className="text-green-300">Circle Paymaster Info:</strong>
-                  <ul className="mt-2 space-y-1 text-green-200 font-mono text-sm">
-                    <li>Network: {paymasterInfo.networkType}</li>
-                    <li>Description: {paymasterInfo.description}</li>
-                    <li>Pricing: {paymasterInfo.pricing}</li>
-                    <li>Token: {paymasterInfo.token}</li>
-                    <li>Standard: {paymasterInfo.standard}</li>
-                  </ul>
-                </div>
-              )}
-
-              <div className="mb-8">
-                <h3 className="text-xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Wallet Status</h3>
-                
-                {!isConnected && (
-                  <div className="p-4 border border-yellow-500 bg-yellow-900">
-                    <p className="text-yellow-200 font-mono">
-                      Please connect your wallet using the Connect Wallet button in the header to create a Circle deployment.
-                    </p>
-                  </div>
-                )}
-                
-                {isConnected && (
-                  <div className="p-4 border border-green-500 bg-green-900">
-                    <p className="text-green-200 font-mono">
-                      ✅ Wallet connected: {address}
-                    </p>
-                    {walletClient && (
-                      <p className="text-green-300 text-sm mt-1 font-mono">
-                        ✅ Wallet client ready
-                      </p>
-                    )}
-                    {!walletClient && (
-                      <p className="text-yellow-300 text-sm mt-1 font-mono">
-                        ⚠️ Wallet client not available
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Current Network Display */}
+        {/* Main Transaction Interface */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Account Info */}
+          <div className="lg:col-span-1">
+            <div className="bg-gray-800 border border-blue-500 p-6">
+              <h2 className="text-xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Account Information</h2>
+              
               {isConnected && chainId && (
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Current Network</h3>
-                  <div className="p-4 border border-blue-500 bg-blue-900">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-300 font-mono">
-                      <div>
-                        <span className="text-blue-400 uppercase tracking-wider text-sm">Chain:</span>
-                        <div className="mt-1">{getChainName(chainId)}</div>
-                      </div>
-                      <div>
-                        <span className="text-blue-400 uppercase tracking-wider text-sm">Chain ID:</span>
-                        <div className="mt-1">{chainId}</div>
-                      </div>
-                      <div>
-                        <span className="text-blue-400 uppercase tracking-wider text-sm">Network Type:</span>
-                        <div className="mt-1">{isTestnet ? 'Testnet' : 'Mainnet'}</div>
-                      </div>
-                      <div>
-                        <span className="text-blue-400 uppercase tracking-wider text-sm">Status:</span>
-                        <div className="mt-1 text-green-400">Active</div>
-                      </div>
+                <div className="space-y-4">
+                  <div className="bg-gray-900 border border-blue-500 p-4">
+                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">Network</div>
+                    <div className="font-mono text-gray-300">{getChainName(chainId)} ({chainId})</div>
+                    <div className="text-sm text-gray-400">{isTestnet ? 'Testnet' : 'Mainnet'}</div>
+                  </div>
+
+                  {circleAccountAddress && (
+                    <div className="bg-gray-900 border border-blue-500 p-4">
+                      <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">Circle Smart Account</div>
+                      <div className="font-mono text-gray-300 text-sm break-all">{circleAccountAddress}</div>
                     </div>
+                  )}
+
+                  <div className="bg-gray-900 border border-blue-500 p-4">
+                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">USDC Balance</div>
+                    <div className="font-mono text-gray-300">{usdcBalance || "Loading..."}</div>
+                    <div className="text-sm text-gray-400">For gas payments</div>
                   </div>
                 </div>
               )}
 
-              {/* Circle Account Status */}
-              {isConnected && (
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Circle Smart Account</h3>
-                  {circleDeployment && circleAccountAddress ? (
-                    <div className="p-4 border border-green-500 bg-green-900">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-green-200 font-mono">
-                        <div>
-                          <span className="text-green-300 uppercase tracking-wider text-sm">Status:</span>
-                          <div className="mt-1 text-green-400">✅ Ready</div>
-                        </div>
-                        <div>
-                          <span className="text-green-300 uppercase tracking-wider text-sm">Address:</span>
-                          <div className="mt-1 break-all text-sm">{circleAccountAddress}</div>
-                        </div>
-                        <div>
-                          <span className="text-green-300 uppercase tracking-wider text-sm">Deployment:</span>
-                          <div className="mt-1 text-green-400">✅ Created</div>
-                        </div>
-                        <div>
-                          <span className="text-green-300 uppercase tracking-wider text-sm">Configuration:</span>
-                          <div className="mt-1 text-green-400">✅ Auto-configured</div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 border border-yellow-500 bg-yellow-900">
-                      <p className="text-yellow-200 font-mono">
-                        {status.includes("Creating") ? "🔄 Creating Circle deployment..." : "⏳ Waiting for Circle deployment..."}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
-                  WalletConnect URI
-                </label>
-                <input
-                  value={uri}
-                  onChange={(e) => setUri(e.target.value.trim())}
-                  placeholder="wc:..."
-                  className="w-full px-4 py-3 bg-gray-800 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
-                />
-              </div>
-
-              <button
-                onClick={handleConnect}
-                disabled={!canConnect}
-                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-3 font-mono uppercase tracking-wider border border-blue-500 disabled:cursor-not-allowed transition-colors mb-8"
-              >
-                Connect
-              </button>
-
-              <div className="flex items-center gap-2 mb-8">
-                <span className="text-sm font-medium text-blue-300 uppercase tracking-wider">Status:</span>
-                <code className="text-sm bg-gray-800 px-3 py-2 border border-blue-500 text-gray-300 font-mono">{status}</code>
-              </div>
-
-              {networkConfig && (
-                <div className="bg-blue-900 border border-blue-500 p-6 mb-8">
-                  <h4 className="font-bold text-blue-400 mb-4 uppercase tracking-wider">Current Network Configuration</h4>
-                  <ul className="text-blue-300 text-sm space-y-2 font-mono">
-                    <li>Chain ID: {networkConfig.chainId}</li>
-                    <li>Network: {networkConfig.isTestnet ? 'Testnet' : 'Mainnet'}</li>
-                    <li>Account: {networkConfig.circleAccountAddress || 'Not set'}</li>
-                    <li>Supported Chains: {networkConfig.supportedChains ? Object.keys(networkConfig.supportedChains).length : 0}</li>
-                  </ul>
-                </div>
-              )}
-
-              {configStatus && (
-                <div className={`border p-6 mb-8 ${
-                  configStatus.isConfigured 
-                    ? 'bg-green-900 border-green-500' 
-                    : 'bg-yellow-900 border-yellow-500'
-                }`}>
-                  <h4 className={`font-bold mb-4 uppercase tracking-wider ${
-                    configStatus.isConfigured ? 'text-green-400' : 'text-yellow-400'
-                  }`}>
-                    Configuration Status
-                  </h4>
-                  <ul className={`text-sm space-y-2 font-mono ${
-                    configStatus.isConfigured ? 'text-green-300' : 'text-yellow-300'
-                  }`}>
-                    <li>Status: {configStatus.isConfigured ? '✅ Configured' : '⚠️ Not Configured'}</li>
-                    <li>Circle Account: {configStatus.hasCircleAccount ? '✅ Set' : '❌ Not Set'}</li>
-                    <li>Circle Deployment: {circleDeployment ? '✅ Created' : '❌ Not Created'}</li>
-                    <li>Chain ID: {configStatus.chainId}</li>
-                    <li>Network: {configStatus.isTestnet ? 'Testnet' : 'Mainnet'}</li>
-                  </ul>
-                  {!configStatus.isConfigured && (
-                    <p className="text-yellow-300 text-sm mt-4 font-mono">
-                      ⚠️ Circle deployment will be created automatically when wallet connects.
-                    </p>
-                  )}
-                  {!circleDeployment && (
-                    <p className="text-blue-300 text-sm mt-4 font-mono">
-                      💡 Circle deployment is created automatically when you connect your wallet.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {circleClientInfo && (
-                <div className="bg-purple-900 border border-purple-500 p-6 mb-8">
-                  <h4 className="font-bold text-purple-400 mb-4 uppercase tracking-wider">Circle Client Information</h4>
-                  <ul className="text-purple-300 text-sm space-y-2 font-mono">
-                    <li>Account Address: <span className="break-all">{circleClientInfo.getAccountAddress()}</span></li>
-                    <li>Chain ID: {circleClientInfo.chainId}</li>
-                    <li>Network: {circleClientInfo.isTestnet ? 'Testnet' : 'Mainnet'}</li>
-                    <li>Client Status: ✅ Active</li>
-                  </ul>
-                  <p className="text-purple-300 text-sm mt-4 font-mono">
-                    💡 This Circle client is ready to handle transactions with USDC gas payments.
+              {!isConnected && (
+                <div className="p-4 border border-yellow-500 bg-yellow-900">
+                  <p className="text-yellow-200 font-mono">
+                    Please connect your wallet to start sending transactions.
                   </p>
                 </div>
               )}
-
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
-                  Event Log
-                </label>
-                <textarea
-                  ref={logRef}
-                  rows={10}
-                  className="w-full px-4 py-3 bg-gray-800 border border-blue-500 text-gray-300 font-mono text-sm focus:outline-none focus:border-blue-400"
-                  readOnly
-                />
-              </div>
-
-              <div className="bg-gray-800 border border-blue-500 p-6">
-                <p className="text-gray-300 text-sm font-mono mb-4">
-                  This wallet connects to Circle Smart Accounts and supports USDC gas payments via Circle Paymaster.
-                  Circle deployment and configuration happens automatically when you connect your wallet.
-                  Testnet connections are free and perfect for development and testing.
-                </p>
-                <div className="p-4 bg-blue-900 border border-blue-500">
-                  <h5 className="font-bold text-blue-400 mb-4 uppercase tracking-wider">Circle Integration Guide:</h5>
-                  <ol className="text-blue-300 text-sm space-y-2 font-mono">
-                    <li>1. Connect your wallet using the Connect Wallet button above</li>
-                    <li>2. Circle deployment is created automatically</li>
-                    <li>3. Circle account address is automatically set</li>
-                    <li>4. Connect to dapps via WalletConnect URI</li>
-                    <li>5. Transactions will use USDC for gas payments</li>
-                  </ol>
-                </div>
-              </div>
             </div>
           </div>
-        )}
+
+          {/* Right Column - Transaction Form */}
+          <div className="lg:col-span-2">
+            <div className="bg-gray-800 border border-blue-500 p-6">
+              <h2 className="text-xl font-bold mb-6 text-blue-400 uppercase tracking-wider">Send Transaction</h2>
+              
+              {isConnected && circleDeployment ? (
+                <div className="space-y-6">
+                  {/* Transaction Type Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
+                      Transaction Type
+                    </label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          checked={transactionType === "eth"}
+                          onChange={() => setTransactionType("eth")}
+                          className="mr-3 accent-blue-500"
+                        />
+                        <span className="text-gray-300 font-mono">ETH</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          checked={transactionType === "usdc"}
+                          onChange={() => setTransactionType("usdc")}
+                          className="mr-3 accent-blue-500"
+                        />
+                        <span className="text-gray-300 font-mono">USDC</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Recipient Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
+                      Recipient Address
+                    </label>
+                    <input
+                      type="text"
+                      value={recipientAddress}
+                      onChange={(e) => setRecipientAddress(e.target.value)}
+                      placeholder="0x..."
+                      className="w-full px-4 py-3 bg-gray-900 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
+                      Amount ({transactionType === "eth" ? "wei" : "USDC"})
+                    </label>
+                    <input
+                      type="text"
+                      value={transactionAmount}
+                      onChange={(e) => setTransactionAmount(e.target.value)}
+                      placeholder={transactionType === "eth" ? "1000000000000000000" : "1000000"}
+                      className="w-full px-4 py-3 bg-gray-900 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
+                    />
+                    <div className="text-sm text-gray-400 mt-1">
+                      {transactionType === "eth" ? "1 ETH = 1000000000000000000 wei" : "1 USDC = 1000000 (6 decimals)"}
+                    </div>
+                  </div>
+
+                  {/* Send Button */}
+                  <button
+                    onClick={sendTransaction}
+                    disabled={loading || !recipientAddress || !transactionAmount}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-4 px-6 font-mono uppercase tracking-wider border border-blue-500 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {loading ? "Sending..." : `Send ${transactionType.toUpperCase()}`}
+                  </button>
+
+                  {/* Transaction Result */}
+                  {transactionResult && (
+                    <div className="bg-green-900 border border-green-500 p-4">
+                      <h4 className="font-bold text-green-400 mb-3 uppercase tracking-wider">
+                        Transaction Successful
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="bg-gray-900 border border-green-500 p-3">
+                          <div className="text-green-300 text-sm uppercase tracking-wider mb-1">User Operation Hash</div>
+                          <div className="font-mono text-gray-300 text-sm break-all">{transactionResult.userOperationHash}</div>
+                        </div>
+                        <div className="bg-gray-900 border border-green-500 p-3">
+                          <div className="text-green-300 text-sm uppercase tracking-wider mb-1">Transaction Hash</div>
+                          <div className="font-mono text-gray-300 text-sm break-all">{transactionResult.transactionHash}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error Display */}
+                  {error && (
+                    <div className="bg-red-900 border border-red-500 p-4">
+                      <h4 className="font-bold text-red-400 mb-2 uppercase tracking-wider">
+                        Error
+                      </h4>
+                      <p className="text-red-300 font-mono">{error}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 border border-yellow-500 bg-yellow-900">
+                  <p className="text-yellow-200 font-mono">
+                    Please connect your wallet and wait for Circle deployment to be ready.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Event Log */}
+        <div className="mt-8">
+          <div className="bg-gray-800 border border-blue-500 p-6">
+            <h3 className="text-lg font-bold mb-4 text-blue-400 uppercase tracking-wider">Event Log</h3>
+            <textarea
+              ref={logRef}
+              rows={8}
+              className="w-full px-4 py-3 bg-gray-900 border border-blue-500 text-gray-300 font-mono text-sm focus:outline-none focus:border-blue-400"
+              readOnly
+            />
+          </div>
+        </div>
       </div>
     </main>
   );
