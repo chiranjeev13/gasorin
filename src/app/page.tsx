@@ -13,6 +13,7 @@ import { formatJsonRpcResult, formatJsonRpcError } from '@walletconnect/jsonrpc-
 import { CircleAccountDeployment } from "@/lib/circle-deployment";
 import CustomConnectButton from "@/components/custom-connect-wallet";
 import { useAccount, useWalletClient } from 'wagmi';
+import { Account } from "viem";
 
 export default function HomePage() {
   const { address, isConnected } = useAccount();
@@ -263,8 +264,21 @@ export default function HomePage() {
         throw new Error('Wallet client not available');
       }
 
-      // Use the wallet client as the owner account
-      const ownerAccount = walletClient.account;
+      // Create a proper account object that supports the required signing methods
+      const ownerAccount = {
+        address: address as `0x${string}`,
+        type: 'json-rpc' as const,
+        async signMessage({ message }: { message: string }) {
+          // Use the wallet client's signMessage method directly
+          return await walletClient.signMessage({ message });
+        },
+        async signTypedData(typedData: unknown) {
+          return await walletClient.request({
+            method: 'eth_signTypedData_v4',
+            params: [address, JSON.stringify(typedData)],
+          });
+        },
+      } as unknown as Account;
       
       // Create Circle deployment instance
       const deployment = new CircleAccountDeployment(ownerAccount, chainId, isTestnet);
@@ -292,9 +306,10 @@ export default function HomePage() {
         logRef.current.scrollTop = logRef.current.scrollHeight;
       }
     } catch (error) {
-      setStatus(`Failed to create Circle deployment: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setStatus(`Failed to create Circle deployment: ${errorMessage}`);
       if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString()} | ERROR: Failed to create Circle deployment: ${error instanceof Error ? error.message : String(error)}`;
+        logRef.current.value += `\n${new Date().toISOString()} | ERROR: Failed to create Circle deployment: ${errorMessage}`;
         logRef.current.scrollTop = logRef.current.scrollHeight;
       }
     }

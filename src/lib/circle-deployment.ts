@@ -236,11 +236,7 @@ export class CircleAccountDeployment {
     chainId: string,
     isTestnet: boolean = false
   ): Promise<CircleAccountDeployment> {
-    const deployment = new CircleAccountDeployment(
-      owner,
-      chainId,
-      isTestnet
-    );
+    const deployment = new CircleAccountDeployment(owner, chainId, isTestnet);
     await deployment.initializeAccount();
     return deployment;
   }
@@ -396,10 +392,12 @@ export class CircleAccountDeployment {
         "Account not initialized. Call initializeAccount() first."
       );
     }
-    // @ts-ignore
-    const wrappedPermitSignature = await this.account.signTypedData(
-      // @ts-ignore
-      permitData as unknown as Parameters<typeof this.account.signTypedData>[0]
+
+    console.log("this.owner", this.owner);
+    // @ts-expect-error - Owner account may have different signTypedData signature
+    const wrappedPermitSignature = await this.owner.signTypedData(
+      // @ts-expect-error - Type assertion for permitData
+      permitData as unknown as Parameters<typeof this.owner.signTypedData>[0]
     );
     const { signature } = parseErc6492Signature(wrappedPermitSignature);
     console.log("signature", signature);
