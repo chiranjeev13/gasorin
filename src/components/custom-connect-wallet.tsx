@@ -55,7 +55,7 @@ const CustomConnectButton = () => {
                   <Button
                     onClick={openConnectModal}
                     variant="ghost"
-                    className="hover:bg-blue-600 hover:text-white cursor-pointer border border-blue-500 px-6 py-3 transition-colors text-blue-400 font-mono uppercase tracking-wider bg-gray-800 hover:bg-blue-600"
+                    className=" hover:text-white cursor-pointer border border-blue-500 px-6 py-3 transition-colors text-blue-400 font-mono uppercase tracking-wider bg-gray-800 hover:bg-blue-600"
                   >
                     Connect Wallet
                   </Button>
