@@ -1,6 +1,6 @@
 # Gasorin
 
-A modern, cyber-inspired WalletConnect implementation for Circle Smart Accounts that supports USDC gas payments via Circle Paymaster. Features automatic Base Sepolia network switching and a sleek, monospaced UI design.
+A WalletConnect implementation for Circle Smart Accounts that supports USDC gas payments via Circle Paymaster. Designed with a sleek UI and intuitive interface for smooth interaction across any DeFi protocol.
 
 ## ✨ Features
 
