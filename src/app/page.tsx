@@ -734,31 +734,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Circle Paymaster Benefits */}
-        <div className="mt-8">
-          <div className="bg-gray-800 border border-blue-500 p-6">
-            <h3 className="text-lg font-bold mb-4 text-blue-400 uppercase tracking-wider">Circle Paymaster Benefits</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300 font-mono text-sm">
-              <div className="bg-gray-900 border border-blue-500 p-4">
-                <div className="text-blue-400 font-bold mb-2">⚡ No ETH Required</div>
-                <p>Send transactions without holding any ETH. Circle Paymaster pays gas fees in USDC automatically.</p>
-              </div>
-              <div className="bg-gray-900 border border-blue-500 p-4">
-                <div className="text-blue-400 font-bold mb-2">💎 USDC Gas Payments</div>
-                <p>Gas fees are paid in USDC, making it easier to manage your transaction costs.</p>
-              </div>
-              <div className="bg-gray-900 border border-blue-500 p-4">
-                <div className="text-blue-400 font-bold mb-2">🎯 Seamless Experience</div>
-                <p>No need to worry about ETH for gas. Gas fees are automatically paid in USDC!</p>
-              </div>
-              <div className="bg-gray-900 border border-blue-500 p-4">
-                <div className="text-blue-400 font-bold mb-2">🔒 Secure & Reliable</div>
-                <p>Built on ERC-4337 Account Abstraction standard with Circle's trusted infrastructure.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Event Log */}
         <div className="mt-8">
           <div className="bg-gray-800 border border-blue-500 p-6">
