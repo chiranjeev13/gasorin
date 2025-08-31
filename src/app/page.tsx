@@ -13,13 +13,8 @@ import { CircleAccountDeployment } from "@/lib/circle-deployment";
 import CustomConnectButton from "@/components/custom-connect-wallet";
 import { useAccount, useWalletClient, useBalance } from 'wagmi';
 import { Account } from "viem";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+import { UnifiedCard } from "@/components/unified-card";
 
 interface TransactionResult {
   userOperationHash: string;
@@ -31,6 +26,7 @@ interface TokenInfo {
   name: string;
   decimals: number;
   address?: string;
+  icon: string;
 }
 
 const TOKENS: Record<string, TokenInfo> = {
@@ -38,11 +34,32 @@ const TOKENS: Record<string, TokenInfo> = {
     symbol: "ETH",
     name: "Ethereum",
     decimals: 18,
+    icon: "/eth-logo.svg",
   },
   usdc: {
     symbol: "USDC",
     name: "USD Coin",
     decimals: 6,
+    icon: "/usdc-logo.svg",
+  },
+};
+
+const SUPPORTED_CHAINS = {
+  mainnet: {
+    "1": { name: "Ethereum", icon: "/eth-logo.svg", color: "text-blue-400" },
+    "137": { name: "Polygon", icon: "🟣", color: "text-purple-400" },
+    "10": { name: "Optimism", icon: "🔴", color: "text-red-400" },
+    "42161": { name: "Arbitrum", icon: "🔵", color: "text-blue-500" },
+    "8453": { name: "Base", icon: "🔵", color: "text-blue-600" },
+    "43114": { name: "Avalanche", icon: "🔴", color: "text-red-500" },
+  },
+  testnet: {
+    "11155111": { name: "Sepolia", icon: "/eth-logo.svg", color: "text-blue-400" },
+    "80001": { name: "Mumbai", icon: "🟣", color: "text-purple-400" },
+    "11155420": { name: "Optimism Sepolia", icon: "🔴", color: "text-red-400" },
+    "421614": { name: "Arbitrum Sepolia", icon: "🔵", color: "text-blue-500" },
+    "84532": { name: "Base Sepolia", icon: "🔵", color: "text-blue-600" },
+    "43113": { name: "Fuji", icon: "🔴", color: "text-red-500" },
   },
 };
 
@@ -50,8 +67,10 @@ export default function HomePage() {
   const { address, isConnected, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
   const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
+  
+  // State management
   const [uri, setUri] = useState<string>("");
-  const [status, setStatus] = useState<string>("Idle");
+  const [status, setStatus] = useState<string>("Welcome to Circle Paymaster");
   const [initialized, setInitialized] = useState<boolean>(false);
   const [circleAccountAddress, setCircleAccountAddress] = useState<string>("");
   const [isTestnet, setIsTestnet] = useState<boolean>(false);
@@ -64,20 +83,26 @@ export default function HomePage() {
   const [selectedToken, setSelectedToken] = useState<string>("eth");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const logRef = useRef<HTMLTextAreaElement | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
+  const [connectedDapp, setConnectedDapp] = useState<{ name: string; icon?: string } | null>(null);
+  
   const walletRef = useRef<CircleWalletConnect | null>(null);
 
   // Get ETH balance using wagmi
-  const { data: ethBalanceData } = useBalance({
+  const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({
     address: circleAccountAddress as `0x${string}`,
   });
 
-  // Auto-detect if current chain is testnet
+  // Auto-detect if current chain is testnet and update Circle client
   useEffect(() => {
     if (chainId) {
       const testnetChainIds = ['11155111', '80001', '11155420', '421614', '84532', '43113'];
       const isCurrentChainTestnet = testnetChainIds.includes(chainId.toString());
       setIsTestnet(isCurrentChainTestnet);
+      
+      // Update status
+      setStatus(`Connected to ${getChainInfo(chainId).name} (${isCurrentChainTestnet ? 'Testnet' : 'Mainnet'})`);
+      setConnectionStatus('connected');
     }
   }, [chainId]);
 
@@ -88,7 +113,7 @@ export default function HomePage() {
     }
   }, [ethBalanceData]);
 
-  // Auto-create Circle deployment when wallet connects
+  // Enhanced Circle deployment creation with better error handling
   useEffect(() => {
     const createDeployment = async () => {
       if (!isConnected || !address || !walletClient || !chainId || circleDeployment) {
@@ -96,7 +121,8 @@ export default function HomePage() {
       }
 
       try {
-        setStatus("Creating Circle deployment...");
+        setStatus("Initializing Circle Smart Account...");
+        setLoading(true);
         
         // Create a proper account object that supports the required signing methods
         const ownerAccount = {
@@ -139,52 +165,38 @@ export default function HomePage() {
           try {
             const balance = await deployment.checkUSDCBalance();
             setUsdcBalance((BigInt(balance) / BigInt(10 ** 6)).toString());
-            if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | USDC balance fetched: ${balance.toString()}`;
-              logRef.current.scrollTop = logRef.current.scrollHeight;
-            }
           } catch (balanceError) {
             console.warn("Could not check USDC balance:", balanceError);
             setUsdcBalance("Unable to fetch");
-            if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WARNING: Could not fetch USDC balance: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`;
-              logRef.current.scrollTop = logRef.current.scrollHeight;
-            }
           }
         }
 
-        setStatus("Circle deployment created and configured automatically!");
+        setStatus("Circle Smart Account ready!");
         
-        if (logRef.current) {
-          logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | Circle deployment created: ${accountAddress} on chain ${chainId} (${isTestnet ? 'testnet' : 'mainnet'})`;
-          logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | Circle account automatically set and configured`;
-          logRef.current.scrollTop = logRef.current.scrollHeight;
-        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         setError(`Failed to create Circle deployment: ${errorMessage}`);
         setStatus("Failed to create Circle deployment");
-        if (logRef.current) {
-          logRef.current.value += `\n${new Date().toISOString()} | ERROR: Failed to create Circle deployment: ${errorMessage}`;
-          logRef.current.scrollTop = logRef.current.scrollHeight;
-        }
+        setConnectionStatus('error');
+      } finally {
+        setLoading(false);
       }
     };
 
     createDeployment();
   }, [isConnected, address, walletClient, chainId, isTestnet, circleDeployment]);
 
-  // Initialize WalletConnect
+  // Initialize WalletConnect with enhanced configuration
   useEffect(() => {
     if (!initialized && projectId) {
-      setStatus("Initializing Wallet...");
+      setStatus("Initializing WalletConnect...");
       const wallet = new CircleWalletConnect(projectId);
       walletRef.current = wallet;
 
       wallet.init()
         .then(() => {
           setInitialized(true);
-          setStatus("Ready");
+          setStatus("WalletConnect ready");
 
           // If Circle deployment already exists, configure the wallet immediately
           if (circleDeployment && circleAccountAddress) {
@@ -193,69 +205,69 @@ export default function HomePage() {
             wallet.setCircleAccountAddress(circleAccountAddress);
             wallet.setChainId(chainId?.toString() || "1");
             wallet.setNetworkType(isTestnet);
-            
-            if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WalletConnect configured with existing Circle deployment`;
-              logRef.current.scrollTop = logRef.current.scrollHeight;
-            }
           }
 
           // Set up event listeners
           wallet.onSessionProposal((proposal) => {
-            if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | session_proposal from ${proposal.params.proposer.metadata.name}`;
-              logRef.current.scrollTop = logRef.current.scrollHeight;
-            }
-
+            console.log("Session proposal received:", proposal.id);
+            
             // Check if wallet is properly configured before approving
             const configStatus = wallet.getConfigurationStatus();
             if (!configStatus.isConfigured) {
-              if (logRef.current) {
-                logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WARNING: No Circle account configured. Session will be approved with placeholder account.`;
-                logRef.current.scrollTop = logRef.current.scrollHeight;
-              }
+              setError("No Circle account configured. Session will be approved with placeholder account.");
             }
 
-            wallet.approveSession(proposal)
+            wallet.approveSessionWithRetry(proposal)
               .then(() => {
-                if (logRef.current) {
-                  logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | session approved successfully`;
-                  logRef.current.scrollTop = logRef.current.scrollHeight;
-                }
                 setStatus("Session approved! Check the dapp.");
+                // Clear the URI input after successful connection
+                setUri("");
+                // Set connected dApp info
+                setConnectedDapp({
+                  name: proposal.params.proposer.metadata.name || "Unknown dApp",
+                  icon: proposal.params.proposer.metadata.icons?.[0] || undefined,
+                });
               })
               .catch((err: unknown) => {
-                if (logRef.current) {
-                  logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | approve error: ${String(err instanceof Error ? err.message : err)}`;
-                  logRef.current.scrollTop = logRef.current.scrollHeight;
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                console.error("Session approval failed:", errorMessage);
+                
+                // Handle specific WalletConnect errors
+                if (errorMessage.includes("expired") || errorMessage.includes("already been processed")) {
+                  setError("Connection request expired. Please try connecting again from the dApp.");
+                  setStatus("Connection expired - try again");
+                } else if (errorMessage.includes("No matching key")) {
+                  setError("Connection session invalid. Please refresh and try again.");
+                  setStatus("Invalid session - refresh and retry");
+                } else if (errorMessage.includes("Record was recently deleted") || errorMessage.includes("was deleted")) {
+                  setError("Connection request was cancelled. Please try connecting again from the dApp.");
+                  setStatus("Connection cancelled - try again");
+                } else if (errorMessage.includes("no longer valid")) {
+                  setError("Connection request is no longer valid. Please try connecting again from the dApp.");
+                  setStatus("Invalid request - try again");
+                } else {
+                  setError(`Session approval failed: ${errorMessage}`);
+                  setStatus(`Session approval failed: ${errorMessage}`);
                 }
-                setStatus(`Session approval failed: ${String(err instanceof Error ? err.message : err)}`);
               });
           });
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          wallet.onRequest(async (event: { id: string; topic: string; params: { request: any } }) => {
+          // Enhanced request handling
+          wallet.onRequest(async (event: { id: string; topic: string; params: { request: unknown } }) => {
             console.debug('[WalletConnect] Incoming request:', event);
-            if (logRef.current) {
-              try {
-                const method = event?.params?.request?.method;
-                logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | [WalletConnect] Incoming request: ${method || 'unknown'} (topic: ${event.topic})`;
-                logRef.current.scrollTop = logRef.current.scrollHeight;
-              } catch {}
-            }
-            // Route all requests here
-            const wcTx = event.params.request;
+            
+            const wcTx = event.params.request as { method?: string; params?: unknown[] };
+            
             // Verify session topic exists before processing
             const activeTopics = new Set(
               (wallet.getActiveSessions() as Array<{ topic?: string }>).map((s) => s.topic).filter(Boolean) as string[]
             );
             if (!activeTopics.has(event.topic)) {
-              if (logRef.current) {
-                logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WARNING: Ignoring request for unknown topic ${event.topic}. Active: ${Array.from(activeTopics).join(',') || 'none'}`;
-                logRef.current.scrollTop = logRef.current.scrollHeight;
-              }
+              console.warn(`Ignoring request for unknown topic ${event.topic}`);
+              setError(`Connection session expired. Please reconnect to the dApp.`);
               return;
             }
+            
             // Handle read-only RPC methods
             if (wcTx?.method === 'eth_blockNumber' || 
                 wcTx?.method === 'eth_chainId' || 
@@ -357,22 +369,18 @@ export default function HomePage() {
           });
 
           wallet.onSessionDelete(() => {
-            if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | session deleted`;
-              logRef.current.scrollTop = logRef.current.scrollHeight;
-            }
+            setStatus("Session deleted");
+            setConnectedDapp(null);
           });
 
           wallet.onProposalExpire(() => {
-            if (logRef.current) {
-              logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | proposal expired`;
-              logRef.current.scrollTop = logRef.current.scrollHeight;
-            }
+            setStatus("Proposal expired");
           });
         })
         .catch((err) => {
           console.error(err);
-          setStatus(`Init error: ${String(err instanceof Error ? err.message : err)}`);
+          setError(`WalletConnect initialization failed: ${String(err instanceof Error ? err.message : err)}`);
+          setConnectionStatus('error');
         });
     }
   }, [initialized, projectId, circleDeployment, circleAccountAddress, chainId, isTestnet]);
@@ -385,70 +393,65 @@ export default function HomePage() {
       walletRef.current.setCircleAccountAddress(circleAccountAddress);
       walletRef.current.setChainId(chainId?.toString() || "1");
       walletRef.current.setNetworkType(isTestnet);
-      
-      if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | WalletConnect updated with Circle deployment`;
-        logRef.current.scrollTop = logRef.current.scrollHeight;
-      }
     }
   }, [circleDeployment, circleAccountAddress, chainId, isTestnet]);
+
+  // Utility functions
+  const getChainInfo = (chainId: number) => {
+    const allChains = { ...SUPPORTED_CHAINS.mainnet, ...SUPPORTED_CHAINS.testnet };
+    return allChains[chainId.toString() as keyof typeof allChains] || { name: `Chain ${chainId}`, icon: "🔗", color: "text-gray-400" };
+  };
 
   const canConnect = useMemo(() => Boolean(initialized && uri.startsWith("wc:")), [initialized, uri]);
 
   const handleConnect = useCallback(async () => {
     if (!walletRef.current) return;
 
-    setStatus("Pairing...");
+    setStatus("Pairing with dApp...");
     try {
       await walletRef.current.connect(uri);
-      setStatus("Paired. Awaiting proposal/requests...");
+      setStatus("Paired successfully. Awaiting requests...");
     } catch (err: unknown) {
-      setStatus(`Pair error: ${String(err instanceof Error ? err.message : err)}`);
+      setError(`Pairing failed: ${String(err instanceof Error ? err.message : err)}`);
     }
   }, [uri]);
 
   const sendTransaction = useCallback(async () => {
     if (!circleDeployment || !recipientAddress || !transactionAmount) {
-      setError("Missing recipient address or transaction amount");
+      setError("Please provide recipient address and transaction amount");
       return;
     }
 
     try {
       setLoading(true);
       setError("");
-      setStatus("Sending transaction...");
+      setStatus("Processing transaction...");
       
       const amount = BigInt(transactionAmount);
       let result;
 
       if (selectedToken === "eth") {
-        // Send ETH transaction
         result = await circleDeployment.sendTransaction(recipientAddress, amount);
       } else {
-        // Send USDC transaction (this would need to be implemented in CircleDeployment)
         setError("USDC transactions not yet implemented");
         setLoading(false);
         return;
       }
 
       setTransactionResult(result);
-      setStatus("Transaction sent successfully!");
+      setStatus("Transaction completed successfully!");
       
-      if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | Transaction sent: ${result.transactionHash}`;
-        logRef.current.scrollTop = logRef.current.scrollHeight;
-      }
-    } catch (err: any) {
-      setError(`Failed to send transaction: ${err.message}`);
+      // Refresh balances
+      refetchEthBalance();
+      refreshUSDCBalance();
+      
+    } catch (err: unknown) {
+      setError(`Transaction failed: ${err instanceof Error ? err.message : String(err)}`);
       setStatus("Transaction failed");
     } finally {
       setLoading(false);
     }
-  }, [circleDeployment, recipientAddress, transactionAmount, selectedToken]);
-
-  // Get current token info and balance
-  const currentToken = TOKENS[selectedToken];
-  const currentBalance = selectedToken === "eth" ? ethBalance : usdcBalance;
+  }, [circleDeployment, recipientAddress, transactionAmount, selectedToken, refetchEthBalance]);
 
   // Function to refresh USDC balance
   const refreshUSDCBalance = useCallback(async () => {
@@ -458,296 +461,67 @@ export default function HomePage() {
       setStatus("Refreshing USDC balance...");
       const balance = await circleDeployment.checkUSDCBalance();
       setUsdcBalance((BigInt(balance) / BigInt(10 ** 6)).toString());
-      setStatus("USDC balance refreshed!");
-      
-      if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | USDC balance refreshed: ${balance.toString()}`;
-        logRef.current.scrollTop = logRef.current.scrollHeight;
-      }
+      setStatus("Balance refreshed!");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      setStatus(`Failed to refresh USDC balance: ${errorMessage}`);
-      
-      if (logRef.current) {
-        logRef.current.value += `\n${new Date().toISOString().split('T')[0]} | ERROR: Failed to refresh USDC balance: ${errorMessage}`;
-        logRef.current.scrollTop = logRef.current.scrollHeight;
-      }
+      setError(`Failed to refresh USDC balance: ${errorMessage}`);
     }
   }, [circleDeployment]);
 
-  // Get chain name from chainId
-  const getChainName = (chainId: number) => {
-    const chainNames: Record<number, string> = {
-      1: 'Ethereum',
-      137: 'Polygon',
-      10: 'Optimism',
-      42161: 'Arbitrum',
-      8453: 'Base',
-      43114: 'Avalanche',
-      11155111: 'Sepolia',
-      80001: 'Mumbai',
-      11155420: 'Optimism Sepolia',
-      421614: 'Arbitrum Sepolia',
-      84532: 'Base Sepolia',
-      43113: 'Fuji',
-    };
-    return chainNames[chainId] || `Chain ${chainId}`;
+  // Get current token info and balance
+  const currentToken = TOKENS[selectedToken];
+  const chainInfo = chainId ? getChainInfo(chainId) : null;
+
+
+
+  // Handle disconnect from dApp
+  const handleDisconnect = () => {
+    if (walletRef.current) {
+      // Get active sessions and disconnect them
+      const activeSessions = walletRef.current.getActiveSessions();
+      if (activeSessions && activeSessions.length > 0) {
+        activeSessions.forEach((session: { topic?: string }) => {
+          if (session.topic) {
+            walletRef.current?.disconnectSession(session.topic);
+          }
+        });
+      }
+    }
+    setConnectedDapp(null);
+    setStatus("Disconnected from dApp");
   };
 
+  // Handle disconnect from wallet
+  const handleWalletDisconnect = () => {
+    setStatus("Wallet disconnected");
+    setConnectionStatus('idle');
+  };
+
+  // Unified Card View
   return (
-    <main className="min-h-screen bg-gray-900">
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Header with WalletConnect and Connect Button */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-blue-400 mb-2 uppercase tracking-wider">Circle Smart Account</h1>
-            <p className="text-xl text-gray-300 font-mono">Send transactions with USDC gas payments</p>
-          </div>
-          
-          {/* WalletConnect Input and Connect Button */}
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 min-w-80">
-              <input
-                value={uri}
-                onChange={(e) => setUri(e.target.value.trim())}
-                placeholder="wc:..."
-                className="w-full px-4 py-3 pr-32 bg-gray-800 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
-              />
-              <button
-                onClick={handleConnect}
-                disabled={!canConnect}
-                className="absolute right-1 top-1 bottom-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 font-mono disabled:cursor-not-allowed transition-colors rounded-sm"
-              >
-                Link
-              </button>
-            </div>
-            <CustomConnectButton />
-          </div>
-        </div>
-
-        {/* Status Bar */}
-        <div className="bg-gray-800 border border-blue-500 p-4 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className={`w-3 h-3 rounded-full ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
-              <span className="text-blue-300 font-mono uppercase text-sm">
-                {status || (loading ? "Processing..." : "Ready")}
-              </span>
-            </div>
-            <div className="text-gray-400 font-mono text-sm">
-              {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not Connected"}
-            </div>
-          </div>
-        </div>
-
-        {/* Main Transaction Interface */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Account Info */}
-          <div className="lg:col-span-1">
-            <div className="bg-gray-800 border border-blue-500 p-6">
-              <h2 className="text-xl font-bold mb-4 text-blue-400 uppercase tracking-wider">Account Information</h2>
-              
-              {isConnected && chainId && (
-                <div className="space-y-4">
-                  <div className="bg-gray-900 border border-blue-500 p-4">
-                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">Network</div>
-                    <div className="font-mono text-gray-300">{getChainName(chainId)} ({chainId})</div>
-                    <div className="text-sm text-gray-400">{isTestnet ? 'Testnet' : 'Mainnet'}</div>
-                    {circleDeployment && (
-                      <div className="text-xs text-gray-500 mt-2 font-mono">
-                        USDC: {circleDeployment.getChainInfo().usdcAddress}
-                      </div>
-                    )}
-                  </div>
-
-                  {circleAccountAddress && (
-                    <div className="bg-gray-900 border border-blue-500 p-4">
-                      <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">Circle Smart Account</div>
-                      <div className="font-mono text-gray-300 text-sm break-all">{circleAccountAddress}</div>
-                    </div>
-                  )}
-
-                  <div className="bg-gray-900 border border-blue-500 p-4">
-                    <div className="text-blue-300 text-sm uppercase tracking-wider mb-2">ETH Balance</div>
-                    <div className="font-mono text-gray-300">{ethBalance || "Loading..."}</div>
-                    <div className="text-sm text-gray-400">Native token</div>
-                    <div className="text-xs text-blue-400 mt-1 font-mono">
-                      💡 No ETH needed for gas - pay with USDC instead!
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-900 border border-blue-500 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-blue-300 text-sm uppercase tracking-wider">USDC Balance</div>
-                      <button
-                        onClick={refreshUSDCBalance}
-                        className="text-blue-400 hover:text-blue-300 text-xs font-mono uppercase tracking-wider"
-                      >
-                        Refresh
-                      </button>
-                    </div>
-                    <div className="font-mono text-gray-300">{usdcBalance || "Loading..."}</div>
-                    <div className="text-sm text-gray-400">Available for transactions</div>
-                    <div className="text-xs text-green-400 mt-1 font-mono">
-                      ⚡ Gas fees paid in USDC via Circle Paymaster
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {!isConnected && (
-                <div className="p-4 border border-yellow-500 bg-yellow-900">
-                  <p className="text-yellow-200 font-mono">
-                    Please connect your wallet to start sending transactions.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column - Transaction Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-gray-800 border border-blue-500 p-6">
-              <h2 className="text-xl font-bold mb-6 text-blue-400 uppercase tracking-wider">Send Transaction</h2>
-              
-              {/* Circle Paymaster Info */}
-              <div className="bg-green-900 border border-green-500 p-4 mb-6">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-green-300 font-mono uppercase tracking-wider text-sm">Circle Paymaster Active</span>
-                </div>
-                <p className="text-green-200 text-sm font-mono">
-                  🎉 <strong>USDC Gas Payments:</strong> Send {currentToken?.symbol} and pay gas fees in USDC instead of ETH. 
-                  Circle Paymaster handles the gas payment automatically!
-                </p>
-              </div>
-              
-              {isConnected && circleDeployment ? (
-                <div className="space-y-6">
-                  {/* Token Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
-                      Select Token
-                    </label>
-                    <Select value={selectedToken} onValueChange={setSelectedToken}>
-                      <SelectTrigger className="w-full bg-gray-900 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400">
-                        <SelectValue placeholder="Select a token" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-900 border border-blue-500">
-                        <SelectItem value="eth" className="text-gray-300 font-mono focus:bg-blue-900 focus:text-blue-300">
-                          <div className="flex items-center space-x-2">
-                            <span>ETH</span>
-                            <span className="text-gray-400">({ethBalance || "0"})</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="usdc" className="text-gray-300 font-mono focus:bg-blue-900 focus:text-blue-300">
-                          <div className="flex items-center space-x-2">
-                            <span>USDC</span>
-                            <span className="text-gray-400">({usdcBalance || "0"})</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  
-
-                  {/* Recipient Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
-                      Recipient Address
-                    </label>
-                    <input
-                      type="text"
-                      value={recipientAddress}
-                      onChange={(e) => setRecipientAddress(e.target.value)}
-                      placeholder="0x..."
-                      className="w-full px-4 py-3 bg-gray-900 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
-                    />
-                  </div>
-
-                  {/* Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-blue-300 mb-3 uppercase tracking-wider">
-                      Amount ({currentToken?.symbol})
-                    </label>
-                    <input
-                      type="text"
-                      value={transactionAmount}
-                      onChange={(e) => setTransactionAmount(e.target.value)}
-                      placeholder={currentToken?.decimals === 18 ? "1000000000000000000" : "1000000"}
-                      className="w-full px-4 py-3 bg-gray-900 border border-blue-500 text-gray-300 font-mono focus:outline-none focus:border-blue-400"
-                    />
-                    <div className="text-sm text-gray-400 mt-1">
-                      {currentToken?.decimals === 18 
-                        ? "1 ETH = 1000000000000000000 wei" 
-                        : "1 USDC = 1000000 (6 decimals)"}
-                    </div>
-                  </div>
-
-                  {/* Send Button */}
-                  <button
-                    onClick={sendTransaction}
-                    disabled={loading || !recipientAddress || !transactionAmount}
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white py-4 px-6 font-mono uppercase tracking-wider border border-green-500 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loading ? "Sending..." : `Send ${currentToken?.symbol} (USDC Gas)`}
-                  </button>
-
-                  {/* Transaction Result */}
-                  {transactionResult && (
-                    <div className="bg-green-900 border border-green-500 p-4">
-                      <h4 className="font-bold text-green-400 mb-3 uppercase tracking-wider">
-                        Transaction Successful
-                      </h4>
-                      <div className="space-y-2">
-                        <div className="bg-gray-900 border border-green-500 p-3">
-                          <div className="text-green-300 text-sm uppercase tracking-wider mb-1">User Operation Hash</div>
-                          <div className="font-mono text-gray-300 text-sm break-all">{transactionResult.userOperationHash}</div>
-                        </div>
-                        <div className="bg-gray-900 border border-green-500 p-3">
-                          <div className="text-green-300 text-sm uppercase tracking-wider mb-1">Transaction Hash</div>
-                          <div className="font-mono text-gray-300 text-sm break-all">{transactionResult.transactionHash}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error Display */}
-                  {error && (
-                    <div className="bg-red-900 border border-red-500 p-4">
-                      <h4 className="font-bold text-red-400 mb-2 uppercase tracking-wider">
-                        Error
-                      </h4>
-                      <p className="text-red-300 font-mono">{error}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="p-4 border border-yellow-500 bg-yellow-900">
-                  <p className="text-yellow-200 font-mono">
-                    Please connect your wallet and wait for Circle deployment to be ready.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Event Log */}
-        <div className="mt-8">
-          <div className="bg-gray-800 border border-blue-500 p-6">
-            <h3 className="text-lg font-bold mb-4 text-blue-400 uppercase tracking-wider">Event Log</h3>
-            <textarea
-              ref={logRef}
-              rows={8}
-              className="w-full px-4 py-3 bg-gray-900 border border-blue-500 text-gray-300 font-mono text-sm focus:outline-none focus:border-blue-400"
-              readOnly
-            />
-          </div>
-        </div>
-      </div>
-    </main>
+    <UnifiedCard
+      isConnected={isConnected}
+      isDappConnected={!!connectedDapp}
+      connectionStatus={connectionStatus}
+      address={address}
+      chainId={chainId}
+      isTestnet={isTestnet}
+      circleDeployment={circleDeployment}
+      circleAccountAddress={circleAccountAddress}
+      usdcBalance={usdcBalance}
+      ethBalance={ethBalance}
+      dappName={connectedDapp?.name}
+      dappIcon={connectedDapp?.icon}
+      uri={uri}
+      setUri={setUri}
+      canConnect={canConnect}
+      onConnect={handleConnect}
+      onDisconnect={connectedDapp ? handleDisconnect : handleWalletDisconnect}
+      onRefreshBalance={refreshUSDCBalance}
+      getChainInfo={getChainInfo}
+      status={status}
+      error={error}
+    />
   );
 }
 

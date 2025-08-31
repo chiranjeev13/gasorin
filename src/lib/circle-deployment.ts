@@ -545,7 +545,9 @@ export class CircleAccountDeployment {
       });
 
       const hash = await bundlerClient.sendUserOperation({
-        account: this.account as any,
+        account: this.account as unknown as Parameters<
+          typeof bundlerClient.sendUserOperation
+        >[0]["account"],
         calls: [
           {
             to: to as `0x${string}`,

@@ -89,6 +89,7 @@ export class CircleWalletConnect {
   private circleAccountAddress: string | null = null;
   private chainId: string = "1"; // Default to Ethereum mainnet
   private isTestnet: boolean = false; // Default to mainnet
+  private proposalQueue: Set<string> = new Set(); // Track proposals to prevent duplicates
 
   constructor(projectId: string) {
     this.core = new Core({ projectId });
@@ -109,10 +110,18 @@ export class CircleWalletConnect {
     // Load existing sessions
     this.activeSessions = this.wc.getActiveSessions();
 
-    // Set up event listeners
+    // Set up event listeners with enhanced proposal handling
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.wc.on("session_proposal", (proposal: any) => {
-      this.listeners.onProposal?.(proposal);
+      // Track the proposal to prevent duplicate processing
+      if (proposal?.id) {
+        this.proposalQueue.add(proposal.id);
+      }
+
+      // Add a small delay to ensure the proposal is fully registered
+      setTimeout(() => {
+        this.listeners.onProposal?.(proposal);
+      }, 100); // Increased delay for better reliability
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,6 +137,11 @@ export class CircleWalletConnect {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.wc.on("proposal_expire", (event: any) => {
+      console.log("Session proposal expired:", event);
+      // Clean up expired proposal from queue
+      if (event?.id) {
+        this.proposalQueue.delete(event.id);
+      }
       this.listeners.onProposalExpire?.(event);
     });
   }
@@ -194,6 +208,39 @@ export class CircleWalletConnect {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async approveSession(proposal: any) {
     if (!this.wc) throw new Error("WalletConnect not initialized");
+
+    // Check if proposal is still valid
+    if (!proposal || !proposal.id) {
+      throw new Error("Invalid session proposal: missing proposal ID");
+    }
+
+    // More aggressive validation to prevent "Record was recently deleted" errors
+    try {
+      // Verify the proposal still exists in the pending proposals
+      const pendingProposals = this.wc.getPendingSessionProposals();
+      const proposalExists = Object.values(pendingProposals).some(
+        (p: unknown) => (p as { id?: string })?.id === proposal.id
+      );
+
+      if (!proposalExists) {
+        // Double-check if this is a timing issue by waiting a moment and checking again
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        const pendingProposalsRetry = this.wc.getPendingSessionProposals();
+        const proposalExistsRetry = Object.values(pendingProposalsRetry).some(
+          (p: unknown) => (p as { id?: string })?.id === proposal.id
+        );
+
+        if (!proposalExistsRetry) {
+          throw new Error(
+            `Session proposal ${proposal.id} has expired or already been processed`
+          );
+        }
+      }
+    } catch (error) {
+      console.warn("Proposal validation failed:", error);
+      // Don't continue with approval if validation fails
+      throw error;
+    }
 
     const requiredNamespaces = proposal.params.requiredNamespaces || {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -301,8 +348,34 @@ export class CircleWalletConnect {
 
       // Update active sessions after approval
       this.activeSessions = this.wc.getActiveSessions();
+
+      // Remove from proposal queue after successful approval
+      this.proposalQueue.delete(proposal.id);
     } catch (error) {
       console.error("Session approval failed:", error);
+
+      // Handle specific WalletConnect errors
+      if (error instanceof Error) {
+        if (
+          error.message.includes("No matching key") ||
+          error.message.includes("proposal")
+        ) {
+          throw new Error(
+            `Session proposal ${proposal.id} has expired or already been processed. Please try connecting again.`
+          );
+        }
+        if (error.message.includes("Record was recently deleted")) {
+          throw new Error(
+            `Session proposal ${proposal.id} was deleted. Please try connecting again from the dApp.`
+          );
+        }
+        if (error.message.includes("namespaces")) {
+          throw new Error(
+            "Invalid session configuration. Please check your wallet setup."
+          );
+        }
+      }
+
       throw error;
     }
   }
@@ -485,9 +558,109 @@ export class CircleWalletConnect {
   }
 
   // Method to set Circle deployment instance for transaction handling
-  setCircleDeployment(circleClient: any) {
+  setCircleDeployment(circleClient: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any).circleDeployment = circleClient;
+  }
+
+  // Clean up invalid or expired sessions
+  private cleanupInvalidSessions() {
+    if (!this.wc) return;
+
+    try {
+      // Get current active sessions
+      const currentSessions = this.wc.getActiveSessions();
+
+      // Check for any sessions that might be invalid
+      Object.entries(currentSessions).forEach(([topic, session]) => {
+        // If session has no expiry or is expired, mark for cleanup
+        if (!session.expiry || session.expiry < Date.now() / 1000) {
+          console.log(`Cleaning up expired session: ${topic}`);
+          // The session will be automatically cleaned up by WalletConnect
+        }
+      });
+
+      // Update our local reference
+      this.activeSessions = this.wc.getActiveSessions();
+    } catch (error) {
+      console.warn("Session cleanup failed:", error);
+    }
+  }
+
+  // Check if a proposal is still valid before attempting approval
+  private isProposalValid(proposalId: string): boolean {
+    if (!this.wc) return false;
+
+    // First check if we're tracking this proposal
+    if (!this.proposalQueue.has(proposalId)) {
+      console.warn(`Proposal ${proposalId} not found in tracking queue`);
+      return false;
+    }
+
+    try {
+      const pendingProposals = this.wc.getPendingSessionProposals();
+      const isValid = Object.values(pendingProposals).some(
+        (p: unknown) => (p as { id?: string })?.id === proposalId
+      );
+
+      if (!isValid) {
+        // Remove from queue if no longer valid
+        this.proposalQueue.delete(proposalId);
+      }
+
+      return isValid;
+    } catch (error) {
+      console.warn("Error checking proposal validity:", error);
+      return false;
+    }
+  }
+
+  // Enhanced session proposal handling with retry logic
+  async approveSessionWithRetry(
+    proposal: unknown,
+    maxRetries = 2
+  ): Promise<void> {
+    let lastError: Error | null = null;
+
+    // Pre-validate the proposal before attempting approval
+    const proposalId = (proposal as { id?: string })?.id;
+    if (proposalId && !this.isProposalValid(proposalId)) {
+      throw new Error(
+        `Session proposal ${proposalId} is no longer valid. Please try connecting again from the dApp.`
+      );
+    }
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.approveSession(proposal);
+        return; // Success, exit the retry loop
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // If it's a "deleted" or "expired" error, don't retry
+        if (
+          lastError.message.includes("deleted") ||
+          lastError.message.includes("expired") ||
+          lastError.message.includes("already been processed") ||
+          lastError.message.includes("no longer valid")
+        ) {
+          throw lastError;
+        }
+
+        // For other errors, retry after a short delay
+        if (attempt < maxRetries) {
+          console.log(
+            `Session approval attempt ${attempt} failed, retrying...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        }
+      }
+    }
+
+    // If we get here, all retries failed
+    throw (
+      lastError || new Error("Session approval failed after multiple attempts")
+    );
   }
 }
 
