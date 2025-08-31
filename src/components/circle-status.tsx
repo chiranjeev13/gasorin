@@ -41,65 +41,76 @@ export function CircleStatus({
   };
 
   return (
-    <div className="elegant-card">
-      <h2 className="elegant-heading text-xl mb-6">Circle Smart Account Status</h2>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-white font-mono text-xl font-bold tracking-wider uppercase">CIRCLE SMART ACCOUNT</h2>
+        <div className="usdc-gas-indicator">
+          GAS: USDC
+        </div>
+      </div>
       
       {circleDeployment && chainId ? (
         <div className="space-y-6">
           {/* Smart Account Address */}
           {circleAccountAddress && (
-            <div className="glass-effect rounded-lg p-4">
-              <div className="elegant-heading text-sm mb-3">Smart Account Address</div>
-              <div className="elegant-text text-sm break-all font-mono bg-slate-800 p-3 rounded">
+            <div className="p-4 border-l-4 border-green-500 bg-gray-900">
+              <div className="text-white font-mono text-sm mb-2 uppercase tracking-wider">SMART ACCOUNT ADDRESS</div>
+              <div className="text-white font-mono text-sm break-all">
                 {circleAccountAddress}
               </div>
-              <div className="elegant-text-secondary text-xs mt-2">
-                🔐 Secured by Circle Paymaster
+              <div className="text-gray-400 font-mono text-xs mt-2 flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500"></div>
+                <span>SECURED BY CIRCLE PAYMASTER</span>
               </div>
             </div>
           )}
 
           {/* Balance Information */}
-          <div className="space-y-4">
-            <div className="glass-effect rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <img src="/eth-logo.svg" alt="ETH" className="w-5 h-5" />
-                  <span className="elegant-text font-semibold">ETH Balance</span>
+          <div className="grid grid-cols-2 gap-4">
+            {/* ETH Balance */}
+            <div className="p-4 border-l-4 border-yellow-500 bg-gray-900">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="w-5 h-5 bg-green-500 flex items-center justify-center">
+                  <img src="/eth-logo.svg" alt="ETH" className="w-3 h-3" />
                 </div>
+                <span className="text-white font-mono font-semibold uppercase">ETH</span>
               </div>
-              <div className="elegant-text text-lg font-bold">
-                {ethBalance || "Loading..."}
+              <div className="text-white font-mono text-lg font-bold">
+                {ethBalance || "LOADING..."}
               </div>
-              <div className="elegant-text-secondary text-xs mt-1">
-                💡 No ETH needed for gas fees
+              <div className="text-gray-400 font-mono text-xs mt-1">
+                NO ETH NEEDED FOR GAS
               </div>
             </div>
 
-            <div className="glass-effect rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
+            {/* USDC Balance */}
+            <div className="p-4 border-l-4 border-green-500 bg-gray-900">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <img src="/usdc-logo.svg" alt="USDC" className="w-5 h-5" />
-                  <span className="elegant-text font-semibold">USDC Balance</span>
+                  <div className="w-5 h-5 bg-white flex items-center justify-center">
+                    <img src="/usdc-logo.svg" alt="USDC" className="w-4 h-4" />
+                  </div>
+                  <span className="text-white font-mono font-semibold uppercase">USDC</span>
                 </div>
                 <button
                   onClick={onRefreshBalance}
-                  className="text-primary hover:text-primary/80 text-xs font-semibold uppercase tracking-wider"
+                  className="bg-white text-black font-mono text-xs font-bold uppercase px-2 py-1 hover:bg-gray-200"
                 >
-                  Refresh
+                  ↻
                 </button>
               </div>
-              <div className="elegant-text text-lg font-bold">
-                {usdcBalance || "Loading..."}
+              <div className="text-white font-mono text-lg font-bold">
+                {usdcBalance || "LOADING..."}
               </div>
-              <div className="elegant-text-secondary text-xs mt-1">
-                ⚡ Gas fees paid in USDC
+              <div className="text-green-400 font-mono text-xs mt-1 flex items-center space-x-1">
+                <div className="usdc-gas-indicator">⚡</div>
+                <span>GAS FEES</span>
               </div>
             </div>
           </div>
 
           {/* Circle Configuration Info */}
-          <div className="glass-effect rounded-lg p-4">
+          {/* <div className="glass-effect rounded-lg p-4">
             <div className="elegant-heading text-sm mb-3">Circle Configuration</div>
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -109,16 +120,16 @@ export function CircleStatus({
                 </span>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       ) : (
-        <div className="glass-effect rounded-lg p-6 text-center">
+        <div className="p-6 text-center border-l-4 border-gray-500 bg-gray-900">
           <div className="text-4xl mb-4">🔗</div>
-          <p className="elegant-text font-semibold mb-2">
-            Connect Your Wallet
+          <p className="text-white font-mono font-bold mb-2 uppercase tracking-wider">
+            CONNECT YOUR WALLET
           </p>
-          <p className="elegant-text-secondary text-sm">
-            Connect your wallet to initialize Circle Smart Account
+          <p className="text-gray-400 font-mono text-sm">
+            CONNECT YOUR WALLET TO INITIALIZE CIRCLE SMART ACCOUNT
           </p>
         </div>
       )}

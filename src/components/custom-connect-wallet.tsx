@@ -55,9 +55,9 @@ const CustomConnectButton = () => {
                   <Button
                     onClick={openConnectModal}
                     variant="ghost"
-                    className=" hover:text-white cursor-pointer border border-blue-500 px-6 py-3 transition-colors text-blue-400 font-mono uppercase tracking-wider bg-gray-800 hover:bg-blue-600"
+                    className="hover:text-black cursor-pointer border-2 border-white px-6 py-3 transition-colors text-black font-mono uppercase tracking-wider bg-white hover:bg-gray-200"
                   >
-                    Connect Wallet
+                    CONNECT WALLET
                   </Button>
                 );
               }
@@ -65,8 +65,8 @@ const CustomConnectButton = () => {
               return (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex text-blue-300 items-center gap-3 bg-gray-800 hover:bg-gray-700 border border-blue-500 py-3 pl-3 pr-6 transition-colors font-mono uppercase tracking-wider">
-                      <div className="w-8 h-8 border border-blue-500">
+                    <button className="flex text-white items-center gap-3 bg-black hover:bg-gray-900 border-2 border-white py-3 pl-3 pr-6 transition-colors font-mono uppercase tracking-wider">
+                      <div className="w-8 h-8 border-2 border-white bg-white">
                         <Image
                           src="/1.png"
                           className="w-full h-full"
@@ -75,30 +75,33 @@ const CustomConnectButton = () => {
                           alt="Profile_Image"
                         />
                       </div>
-                      <span className="text-sm font-mono uppercase tracking-wider text-blue-300">
+                      <span className="text-sm font-mono uppercase tracking-wider text-white">
                         {account.displayName}
                       </span>
+                      <div className="usdc-gas-indicator ml-2">
+                        GAS: USDC
+                      </div>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-gray-900 border border-blue-500">
+                  <DropdownMenuContent align="end" className="w-56 bg-black border-2 border-white">
                     <DropdownMenuItem
                       onClick={() => copyAddress(account.address)}
-                      className="cursor-pointer text-blue-300 hover:bg-gray-800 hover:text-blue-400 font-mono"
+                      className="cursor-pointer text-white hover:bg-gray-900 hover:text-gray-300 font-mono"
                     >
                       <Copy className="mr-2 h-4 w-4" />
-                      Copy Address
+                      COPY ADDRESS
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleAccountDetails} className="cursor-pointer text-blue-300 hover:bg-gray-800 hover:text-blue-400 font-mono">
+                    <DropdownMenuItem onClick={handleAccountDetails} className="cursor-pointer text-white hover:bg-gray-900 hover:text-gray-300 font-mono">
                       <User className="mr-2 h-4 w-4" />
-                      Account Details
+                      ACCOUNT DETAILS
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-blue-500" />
+                    <DropdownMenuSeparator className="bg-white" />
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="cursor-pointer text-red-400 hover:bg-gray-800 hover:text-red-300 font-mono"
+                      className="cursor-pointer text-red-400 hover:bg-gray-900 hover:text-red-300 font-mono"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      Logout
+                      LOGOUT
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
