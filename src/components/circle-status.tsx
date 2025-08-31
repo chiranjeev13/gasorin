@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { CircleAccountDeployment } from '@/lib/circle-deployment';
-
+import Image from 'next/image';
 interface CircleStatusProps {
   circleDeployment: CircleAccountDeployment | null;
   circleAccountAddress: string;
@@ -70,9 +70,7 @@ export function CircleStatus({
             {/* ETH Balance */}
             <div className="p-4 border-l-4 border-yellow-500 bg-gray-900">
               <div className="flex items-center space-x-2 mb-2">
-                <div className="w-5 h-5 bg-green-500 flex items-center justify-center">
-                  <img src="/eth-logo.svg" alt="ETH" className="w-3 h-3" />
-                </div>
+                  <Image src="/eth-logo.svg" alt="ETH" className="w-6 h-6" width={20} height={20} />
                 <span className="text-white font-medium uppercase">ETH</span>
               </div>
               <div className="text-white text-lg font-bold">
@@ -87,9 +85,7 @@ export function CircleStatus({
             <div className="p-4 border-l-4 border-green-500 bg-gray-900">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <div className="w-5 h-5 bg-white flex items-center justify-center">
-                    <img src="/usdc-logo.svg" alt="USDC" className="w-4 h-4" />
-                  </div>
+                  <Image src="/usdc-logo.svg" alt="USDC" className="w-6 h-6" width={20} height={20} />
                   <span className="text-white font-medium uppercase">USDC</span>
                 </div>
                 <button
