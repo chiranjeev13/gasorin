@@ -11,7 +11,7 @@ import { CircleWalletConnect } from "@/lib/walletconnect";
 import { formatJsonRpcResult, formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import { CircleAccountDeployment } from "@/lib/circle-deployment";
 import CustomConnectButton from "@/components/custom-connect-wallet";
-import { useAccount, useWalletClient, useBalance } from 'wagmi';
+import { useAccount, useWalletClient, useBalance, useDisconnect } from 'wagmi';
 import { Account } from "viem";
 
 import { UnifiedCard } from "@/components/unified-card";
@@ -66,6 +66,7 @@ const SUPPORTED_CHAINS = {
 export default function HomePage() {
   const { address, isConnected, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
+  const { disconnectAsync } = useDisconnect();
   const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
   
   // State management
@@ -492,9 +493,20 @@ export default function HomePage() {
   };
 
   // Handle disconnect from wallet
-  const handleWalletDisconnect = () => {
-    setStatus("Wallet disconnected");
-    setConnectionStatus('idle');
+  const handleWalletDisconnect = async () => {
+    try {
+      await disconnectAsync();
+      setStatus("Wallet disconnected");
+      setConnectionStatus('idle');
+      // Reset Circle deployment state
+      setCircleDeployment(null);
+      setCircleAccountAddress("");
+      setUsdcBalance("");
+      setEthBalance("");
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error);
+      setError("Failed to disconnect wallet");
+    }
   };
 
   // Unified Card View

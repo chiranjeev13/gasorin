@@ -353,15 +353,17 @@ export function UnifiedCard({
               </GlassCard>
             )}
 
-            {/* Disconnect Button */}
-            <div className="flex justify-center">
-              <button
-                onClick={onDisconnect}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold px-8 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                {cardState === 'dapp-connected' ? 'Disconnect from dApp' : 'Disconnect'}
-              </button>
-            </div>
+            {/* Disconnect Button - Only show when wallet is connected */}
+            {isConnected && (
+              <div className="flex justify-center">
+                <button
+                  onClick={onDisconnect}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold px-8 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+                >
+                  {cardState === 'dapp-connected' ? 'Disconnect from dApp' : 'Disconnect'}
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
