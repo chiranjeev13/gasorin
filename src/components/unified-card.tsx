@@ -9,7 +9,7 @@ import { CircleStatus } from "./circle-status";
 import { CircleAccountDeployment } from "@/lib/circle-deployment";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-
+import Image from "next/image";
 interface UnifiedCardProps {
   // State props
   isConnected: boolean;
@@ -286,10 +286,8 @@ export function UnifiedCard({
                 <div className="mb-6 grid grid-cols-2 gap-4">
                   {/* ETH Balance */}
                   <div className="p-4  border-yellow-500 bg-gray-900">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-6 h-6 bg-green-500 flex items-center justify-center">
-                        <img src="/eth-logo.svg" alt="ETH" className="w-4 h-4" />
-                      </div>
+                    <div className="flex items-center space-x-2 mb-2">  
+                        <Image src="/eth-logo.svg" alt="ETH" className="w-6 h-6" width={24} height={24}/>
                       <span className="text-white font-medium">ETH</span>
                     </div>
                     <div className="text-white text-lg font-bold">{ethBalance || "0"}</div>
@@ -299,9 +297,7 @@ export function UnifiedCard({
                   {/* USDC Balance */}
                   <div className="p-4  border-green-500 bg-gray-900">
                     <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-6 h-6 bg-white flex items-center justify-center">
-                        <img src="/usdc-logo.svg" alt="USDC" className="w-5 h-5" />
-                      </div>
+                        <Image src="/usdc-logo.svg" alt="USDC" className="w-6 h-6" width={24} height={24}/>
                       <span className="text-white font-medium">USDC</span>
                     </div>
                     <div className="text-white text-lg font-bold">{usdcBalance || "0"}</div>
