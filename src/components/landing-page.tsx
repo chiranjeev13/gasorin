@@ -26,14 +26,14 @@ export function LandingPage({ status, error, connectionStatus }: LandingPageProp
         >
           {/* Top Left Logo */}
           <div className="absolute top-4 left-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-pink-400 via-orange-400 to-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-7 h-7 bg-gradient-to-br from-pink-400 via-orange-400 to-blue-500 rounded-full flex items-center justify-center">
               <div className="w-6 h-6 bg-white rounded-full"></div>
             </div>
           </div>
 
           {/* Top Right Icon */}
           <div className="absolute top-4 right-4">
-            <div className="w-6 h-6 bg-gray-600 rounded flex items-center justify-center">
+            <div className="w-5 h-5 bg-gray-600 rounded flex items-center justify-center">
               <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
@@ -45,7 +45,7 @@ export function LandingPage({ status, error, connectionStatus }: LandingPageProp
             {/* Title */}
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold elegant-heading mb-1">Circle Smart Account</h1>
-              <h2 className="text-lg font-semibold elegant-text">WalletConnect</h2>
+              <h2 className="text-lg font-medium elegant-text">WalletConnect</h2>
             </div>
 
             {/* Rainbow Kit Integration */}
@@ -90,7 +90,7 @@ export function LandingPage({ status, error, connectionStatus }: LandingPageProp
                 <div className="flex items-center space-x-3">
                   <img src="/usdc-logo.svg" alt="USDC" className="w-6 h-6" />
                   <div>
-                    <div className="elegant-text font-semibold text-sm">USDC Gas Payments</div>
+                    <div className="elegant-text font-medium text-sm">USDC Gas Payments</div>
                     <div className="elegant-text-secondary text-xs">Pay gas fees in USDC instead of ETH</div>
                   </div>
                 </div>
@@ -100,7 +100,7 @@ export function LandingPage({ status, error, connectionStatus }: LandingPageProp
                 <div className="flex items-center space-x-3">
                   <span className="text-green-400 text-xl">🔐</span>
                   <div>
-                    <div className="elegant-text font-semibold text-sm">Smart Account Security</div>
+                    <div className="elegant-text font-medium text-sm">Smart Account Security</div>
                     <div className="elegant-text-secondary text-xs">Enhanced security with Circle Paymaster</div>
                   </div>
                 </div>
@@ -110,7 +110,7 @@ export function LandingPage({ status, error, connectionStatus }: LandingPageProp
                 <div className="flex items-center space-x-3">
                   <span className="text-purple-400 text-xl">🌐</span>
                   <div>
-                    <div className="elegant-text font-semibold text-sm">Multi-Chain Support</div>
+                    <div className="elegant-text font-medium text-sm">Multi-Chain Support</div>
                     <div className="elegant-text-secondary text-xs">Works across multiple networks</div>
                   </div>
                 </div>

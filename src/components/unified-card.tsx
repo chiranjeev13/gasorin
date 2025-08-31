@@ -87,7 +87,8 @@ export function UnifiedCard({
       <div className="max-w-2xl w-full relative z-10">
         {/* Main Card */}
         <motion.div 
-          className="bg-black border border-white relative font-mono"
+          className="bg-black border border-white relative"
+          style={{ fontFamily: "var(--font-departure-mono), monospace" }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -113,8 +114,8 @@ export function UnifiedCard({
 
             {/* Title */}
             <div className="text-center mb-6 pt-8">
-              <h1 className="text-3xl font-bold text-white font-mono tracking-wider mb-2">CIRCLE SMART ACCOUNT</h1>
-              <p className="text-gray-400 text-sm font-mono">
+              <h1 className="text-3xl font-bold text-white tracking-wider mb-2">CIRCLE SMART ACCOUNT</h1>
+              <p className="text-gray-400 text-sm">
                 {cardState === 'dapp-connected' ? '> CONNECTED TO DAPP' :
                  cardState === 'dashboard' ? '> WALLET DASHBOARD' :
                  '> USDC GAS SUPPORTED BY CIRCLE PAYMASTER'}
@@ -153,17 +154,17 @@ export function UnifiedCard({
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="p-3 border-l-4 border-green-500 bg-gray-900">
                     <div className="text-green-400 text-lg mb-1">⚡</div>
-                    <div className="text-white font-mono font-semibold text-xs">USDC GAS</div>
+                    <div className="text-white font-medium text-xs">USDC GAS</div>
                   </div>
                   
                   <div className="p-3 border-l-4 border-blue-500 bg-gray-900">
                     <div className="text-blue-400 text-lg mb-1">🔐</div>
-                    <div className="text-white font-mono font-semibold text-xs">SECURE</div>
+                    <div className="text-white font-medium text-xs">SECURE</div>
                   </div>
                   
                   <div className="p-3 border-l-4 border-purple-500 bg-gray-900">
                     <div className="text-purple-400 text-lg mb-1">🌐</div>
-                    <div className="text-white font-mono font-semibold text-xs">MULTI-CHAIN</div>
+                    <div className="text-white font-medium text-xs">MULTI-CHAIN</div>
                   </div>
                 </div>
               </motion.div>
@@ -182,19 +183,19 @@ export function UnifiedCard({
                     <div className="w-6 h-6 bg-white border border-black flex items-center justify-center">
                       <div className="w-2 h-2 bg-black"></div>
                     </div>
-                    <span className="text-white font-mono font-semibold">CONNECT TO DAPPS VIA WALLETCONNECT URI</span>
+                    <span className="text-white font-medium">CONNECT TO DAPPS VIA WALLETCONNECT URI</span>
                   </div>
                   <div className="relative">
                     <Input
                       value={uri}
                       onChange={(e) => setUri(e.target.value.trim())}
                       placeholder="PASTE WALLETCONNECT URI HERE"
-                      className="bg-black border border-white text-white font-mono placeholder-gray-400 w-full pr-20 h-12 px-4"
+                      className="bg-black border border-white text-white placeholder-gray-400 w-full pr-20 h-12 px-4"
                     />
                     <Button
                       onClick={onConnect}
                       disabled={!canConnect}
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white text-black font-mono font-bold px-4 py-1 text-sm border border-black hover:bg-gray-200 disabled:bg-gray-600 disabled:text-gray-400"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white text-black font-bold px-4 py-1 text-sm border border-black hover:bg-gray-200 disabled:bg-gray-600 disabled:text-gray-400"
                     >
                       LINK
                     </Button>
@@ -205,12 +206,12 @@ export function UnifiedCard({
                 <div className="mb-6 flex items-center justify-between p-4 border-l-4 border-green-500 bg-gray-900">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <span className="text-white font-mono font-medium">
+                                            <span className="text-white font-medium">
                       {chainId && chainInfo && `CONNECTED TO ${chainInfo.name.toUpperCase()} (${isTestnet ? 'TESTNET' : 'MAINNET'})`}
                     </span>
                   </div>
                   {address && (
-                    <div className="text-white font-mono text-sm">
+                                            <div className="text-white text-sm">
                       {address.slice(0, 6)}...{address.slice(-4)}
                     </div>
                   )}
@@ -267,16 +268,16 @@ export function UnifiedCard({
                       </div>
                     )}
                     <div>
-                      <div className="text-white font-mono text-xl font-bold">{dappName}</div>
-                      <div className="text-gray-400 font-mono text-sm">CONNECTED DAPP</div>
+                      <div className="text-white text-xl font-bold">{dappName}</div>
+                      <div className="text-gray-400 text-sm">CONNECTED DAPP</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Smart Account Address */}
                 <div className="mb-6 p-3 border-l-4 border-gray-500 bg-gray-900">
-                  <div className="text-gray-400 font-mono text-xs mb-1 uppercase">SMART ACCOUNT</div>
-                  <div className="text-white font-mono text-sm break-all">
+                  <div className="text-gray-400 text-xs mb-1 uppercase">SMART ACCOUNT</div>
+                  <div className="text-white text-sm break-all">
                     {circleAccountAddress}
                   </div>
                 </div>
@@ -289,10 +290,10 @@ export function UnifiedCard({
                       <div className="w-6 h-6 bg-green-500 flex items-center justify-center">
                         <img src="/eth-logo.svg" alt="ETH" className="w-4 h-4" />
                       </div>
-                      <span className="text-white font-mono font-semibold">ETH</span>
+                      <span className="text-white font-medium">ETH</span>
                     </div>
-                    <div className="text-white font-mono text-lg font-bold">{ethBalance || "0"}</div>
-                    <div className="text-gray-400 font-mono text-xs">NO ETH NEEDED</div>
+                    <div className="text-white text-lg font-bold">{ethBalance || "0"}</div>
+                    <div className="text-gray-400 text-xs">NO ETH NEEDED</div>
                   </div>
                   
                   {/* USDC Balance */}
@@ -301,10 +302,10 @@ export function UnifiedCard({
                       <div className="w-6 h-6 bg-white flex items-center justify-center">
                         <img src="/usdc-logo.svg" alt="USDC" className="w-5 h-5" />
                       </div>
-                      <span className="text-white font-mono font-semibold">USDC</span>
+                      <span className="text-white font-medium">USDC</span>
                     </div>
-                    <div className="text-white font-mono text-lg font-bold">{usdcBalance || "0"}</div>
-                    <div className="text-green-400 font-mono text-xs flex items-center space-x-1">
+                    <div className="text-white text-lg font-bold">{usdcBalance || "0"}</div>
+                    <div className="text-green-400 text-xs flex items-center space-x-1">
                       <div className="usdc-gas-indicator">⚡</div>
                       <span>GAS FEES</span>
                     </div>
@@ -320,7 +321,7 @@ export function UnifiedCard({
               <div className="p-3 mb-4 border-l-4 border-red-500 bg-gray-900">
                 <div className="flex items-center space-x-2">
                   <span className="text-red-500">⚠️</span>
-                  <span className="text-red-300 font-mono text-sm">{error}</span>
+                  <span className="text-red-300 text-sm">{error}</span>
                 </div>
               </div>
             )}
@@ -330,7 +331,7 @@ export function UnifiedCard({
               <div className="flex justify-center">
                 <button
                   onClick={onDisconnect}
-                  className="bg-red-500 hover:bg-red-600 text-white font-mono font-bold px-8 py-3 border border-red-500 hover:border-red-600 transition-all duration-200 transform hover:scale-105"
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold px-8 py-3 border border-red-500 hover:border-red-600 transition-all duration-200 transform hover:scale-105"
                 >
                   {cardState === 'dapp-connected' ? 'DISCONNECT FROM DAPP' : 'DISCONNECT'}
                 </button>

@@ -63,7 +63,7 @@ export function ChainSelector({ onChainChange }: ChainSelectorProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block elegant-text font-semibold">
+      <label className="block elegant-text font-medium">
         Network
       </label>
       <Select value={currentValue} onValueChange={handleChainChange}>
@@ -71,7 +71,7 @@ export function ChainSelector({ onChainChange }: ChainSelectorProps) {
           <SelectValue placeholder="Select network" />
         </SelectTrigger>
         <SelectContent className="glass-effect border border-primary max-h-60">
-          <div className="px-3 py-2 elegant-text-secondary text-xs font-semibold uppercase tracking-wider">
+          <div className="px-3 py-2 elegant-text-secondary text-xs font-medium uppercase tracking-wider">
             Mainnet Networks
           </div>
           {SUPPORTED_CHAINS.filter(c => !c.isTestnet).map((chain) => (
@@ -88,7 +88,7 @@ export function ChainSelector({ onChainChange }: ChainSelectorProps) {
             </SelectItem>
           ))}
           
-          <div className="px-3 py-2 elegant-text-secondary text-xs font-semibold uppercase tracking-wider mt-2">
+          <div className="px-3 py-2 elegant-text-secondary text-xs font-medium uppercase tracking-wider mt-2">
             Testnet Networks
           </div>
           {SUPPORTED_CHAINS.filter(c => c.isTestnet).map((chain) => (

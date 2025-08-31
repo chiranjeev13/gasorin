@@ -3,7 +3,13 @@ import { Roboto } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
+import localFont from "next/font/local";
 
+const departureMono = localFont({
+  src: "./fonts/DepartureMono-Regular.woff",
+  variable: "--font-departure-mono",
+  display: "swap",
+});
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
   subsets: ['latin'],
@@ -37,7 +43,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${roboto.variable} font-roboto`}>
+      <body className={`${departureMono.variable} antialiased`}
+      style={{ fontFamily: "var(--font-departure-mono)" }}>
         <Providers walletConnectProjectId={process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ""}>
           {children}
         </Providers>

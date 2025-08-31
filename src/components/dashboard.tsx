@@ -83,7 +83,7 @@ export function Dashboard({
                 <div className="w-6 h-6 bg-gradient-to-br from-pink-400 via-orange-400 to-blue-500 rounded-full flex items-center justify-center">
                   <div className="w-4 h-4 bg-white rounded-full"></div>
                 </div>
-                <span className="elegant-text font-semibold">CONNECT TO DAPPS VIA WALLETCONNECT URI</span>
+                <span className="elegant-text font-medium">CONNECT TO DAPPS VIA WALLETCONNECT URI</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="flex-1">
@@ -118,7 +118,7 @@ export function Dashboard({
                   </div>
                   {address && (
                     <div className="text-right">
-                      <div className="elegant-text font-mono text-sm">
+                      <div className="elegant-text text-sm">
                         {address.slice(0, 6)}...{address.slice(-4)}
                       </div>
                     </div>

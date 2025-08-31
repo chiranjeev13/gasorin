@@ -47,7 +47,7 @@ export function ConnectedDapp({
 
           {/* Connected DApp Section */}
           <div className="mb-8">
-            <h2 className="text-white text-lg font-semibold text-center mb-4 tracking-wider">CONNECTED DAPP</h2>
+            <h2 className="text-white text-lg font-medium text-center mb-4 tracking-wider">CONNECTED DAPP</h2>
             <GlassCard className="rounded-xl p-4" delay={0.2}>
               <div className="flex items-center space-x-4">
                 {dappIcon ? (
@@ -81,7 +81,7 @@ export function ConnectedDapp({
           {/* Smart Account Address */}
           <div className="mb-8 text-right">
             <div className="text-white/70 text-sm mb-1">Smart Account Address</div>
-            <div className="text-white font-mono text-sm break-all">
+            <div className="text-white text-sm break-all">
               {smartAccountAddress}
             </div>
             <div className="text-white text-sm mt-2">
@@ -91,7 +91,7 @@ export function ConnectedDapp({
 
           {/* Account Balances */}
           <div className="mb-8">
-            <h3 className="text-white text-lg font-semibold text-center mb-4 tracking-wider">ACCOUNT BALANCES</h3>
+            <h3 className="text-white text-lg font-medium text-center mb-4 tracking-wider">ACCOUNT BALANCES</h3>
             
             {/* ETH Balance */}
             <GlassCard className="rounded-xl p-4 mb-3" delay={0.4}>
@@ -101,11 +101,11 @@ export function ConnectedDapp({
                     <img src="/eth-logo.svg" alt="ETH" className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-white font-semibold">ETH Balance</div>
+                    <div className="text-white font-medium">ETH Balance</div>
                     <div className="text-white/60 text-xs">Native token for network fees</div>
                   </div>
                 </div>
-                <span className="text-white font-mono font-bold text-lg">{ethBalance || "0"}</span>
+                <span className="text-white font-bold text-lg">{ethBalance || "0"}</span>
               </div>
             </GlassCard>
             
@@ -117,11 +117,11 @@ export function ConnectedDapp({
                     <img src="/usdc-logo.svg" alt="USDC" className="w-6 h-6" />
                   </div>
                   <div>
-                    <div className="text-white font-semibold">USDC Balance</div>
+                    <div className="text-white font-medium">USDC Balance</div>
                     <div className="text-white/60 text-xs">Available for gas payments via Circle Paymaster</div>
                   </div>
                 </div>
-                <span className="text-white font-mono font-bold text-lg">{usdcBalance || "0"}</span>
+                <span className="text-white font-bold text-lg">{usdcBalance || "0"}</span>
               </div>
             </GlassCard>
           </div>

@@ -43,7 +43,7 @@ export function CircleStatus({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-white font-mono text-xl font-bold tracking-wider uppercase">CIRCLE SMART ACCOUNT</h2>
+        <h2 className="text-white text-xl font-bold tracking-wider uppercase">CIRCLE SMART ACCOUNT</h2>
         <div className="usdc-gas-indicator">
           GAS: USDC
         </div>
@@ -54,11 +54,11 @@ export function CircleStatus({
           {/* Smart Account Address */}
           {circleAccountAddress && (
             <div className="p-4 border-l-4 border-green-500 bg-gray-900">
-              <div className="text-white font-mono text-sm mb-2 uppercase tracking-wider">SMART ACCOUNT ADDRESS</div>
-              <div className="text-white font-mono text-sm break-all">
+              <div className="text-white text-sm mb-2 uppercase tracking-wider">SMART ACCOUNT ADDRESS</div>
+              <div className="text-white text-sm break-all">
                 {circleAccountAddress}
               </div>
-              <div className="text-gray-400 font-mono text-xs mt-2 flex items-center space-x-2">
+              <div className="text-gray-400 text-xs mt-2 flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500"></div>
                 <span>USDC GAS SUPPORTED BY CIRCLE PAYMASTER</span>
               </div>
@@ -73,12 +73,12 @@ export function CircleStatus({
                 <div className="w-5 h-5 bg-green-500 flex items-center justify-center">
                   <img src="/eth-logo.svg" alt="ETH" className="w-3 h-3" />
                 </div>
-                <span className="text-white font-mono font-semibold uppercase">ETH</span>
+                <span className="text-white font-medium uppercase">ETH</span>
               </div>
-              <div className="text-white font-mono text-lg font-bold">
+              <div className="text-white text-lg font-bold">
                 {ethBalance || "LOADING..."}
               </div>
-              <div className="text-gray-400 font-mono text-xs mt-1">
+              <div className="text-gray-400 text-xs mt-1">
                 NO ETH NEEDED FOR GAS
               </div>
             </div>
@@ -90,19 +90,19 @@ export function CircleStatus({
                   <div className="w-5 h-5 bg-white flex items-center justify-center">
                     <img src="/usdc-logo.svg" alt="USDC" className="w-4 h-4" />
                   </div>
-                  <span className="text-white font-mono font-semibold uppercase">USDC</span>
+                  <span className="text-white font-medium uppercase">USDC</span>
                 </div>
                 <button
                   onClick={onRefreshBalance}
-                  className="bg-white text-black font-mono text-xs font-bold uppercase px-2 py-1 hover:bg-gray-200"
+                  className="bg-white text-black text-xs font-bold uppercase px-2 py-1 hover:bg-gray-200"
                 >
                   ↻
                 </button>
               </div>
-              <div className="text-white font-mono text-lg font-bold">
+              <div className="text-white text-lg font-bold">
                 {usdcBalance || "LOADING..."}
               </div>
-              <div className="text-green-400 font-mono text-xs mt-1 flex items-center space-x-1">
+              <div className="text-green-400 text-xs mt-1 flex items-center space-x-1">
                 <div className="usdc-gas-indicator">⚡</div>
                 <span>GAS FEES</span>
               </div>
@@ -115,7 +115,7 @@ export function CircleStatus({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="elegant-text-secondary">Paymaster:</span>
-                <span className="elegant-text font-mono text-xs">
+                <span className="elegant-text text-xs">
                   {circleDeployment.getChainInfo().paymasterAddress.slice(0, 8)}...
                 </span>
               </div>
@@ -125,10 +125,10 @@ export function CircleStatus({
       ) : (
         <div className="p-6 text-center border-l-4 border-gray-500 bg-gray-900">
           <div className="text-4xl mb-4">🔗</div>
-          <p className="text-white font-mono font-bold mb-2 uppercase tracking-wider">
+          <p className="text-white font-bold mb-2 uppercase tracking-wider">
             CONNECT YOUR WALLET
           </p>
-          <p className="text-gray-400 font-mono text-sm">
+          <p className="text-gray-400 text-sm">
             CONNECT YOUR WALLET TO INITIALIZE CIRCLE SMART ACCOUNT
           </p>
         </div>

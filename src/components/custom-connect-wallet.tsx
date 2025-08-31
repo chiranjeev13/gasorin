@@ -55,7 +55,7 @@ const CustomConnectButton = () => {
                   <Button
                     onClick={openConnectModal}
                     variant="ghost"
-                    className="hover:text-black cursor-pointer border border-white px-6 py-3 transition-colors text-black font-mono uppercase tracking-wider bg-white hover:bg-gray-200"
+                    className="hover:text-black cursor-pointer border border-white px-6 py-3 transition-colors text-black uppercase tracking-wider bg-white hover:bg-gray-200"
                   >
                     CONNECT WALLET
                   </Button>
@@ -65,7 +65,7 @@ const CustomConnectButton = () => {
               return (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex text-white items-center gap-3 bg-black hover:bg-gray-900 border border-white py-3 pl-3 pr-6 transition-colors font-mono uppercase tracking-wider">
+                    <button className="flex text-white items-center gap-3 bg-black hover:bg-gray-900 border border-white py-3 pl-3 pr-6 transition-colors uppercase tracking-wider">
                       <div className="w-8 h-8 border border-white bg-white">
                         <Image
                           src="/1.png"
@@ -75,7 +75,7 @@ const CustomConnectButton = () => {
                           alt="Profile_Image"
                         />
                       </div>
-                      <span className="text-sm font-mono uppercase tracking-wider text-white">
+                      <span className="text-sm uppercase tracking-wider text-white">
                         {account.displayName}
                       </span>
                       <div className="usdc-gas-indicator ml-2">
@@ -86,19 +86,19 @@ const CustomConnectButton = () => {
                   <DropdownMenuContent align="end" className="w-56 bg-black border border-white">
                     <DropdownMenuItem
                       onClick={() => copyAddress(account.address)}
-                      className="cursor-pointer text-white hover:bg-gray-900 hover:text-gray-300 font-mono"
+                      className="cursor-pointer text-white hover:bg-gray-900 hover:text-gray-300"
                     >
                       <Copy className="mr-2 h-4 w-4" />
                       COPY ADDRESS
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleAccountDetails} className="cursor-pointer text-white hover:bg-gray-900 hover:text-gray-300 font-mono">
+                    <DropdownMenuItem onClick={handleAccountDetails} className="cursor-pointer text-white hover:bg-gray-900 hover:text-gray-300">
                       <User className="mr-2 h-4 w-4" />
                       ACCOUNT DETAILS
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-white" />
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="cursor-pointer text-red-400 hover:bg-gray-900 hover:text-red-300 font-mono"
+                      className="cursor-pointer text-red-400 hover:bg-gray-900 hover:text-red-300"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       LOGOUT
