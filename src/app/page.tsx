@@ -15,6 +15,7 @@ import { useAccount, useWalletClient, useBalance, useDisconnect } from 'wagmi';
 import { Account } from "viem";
 
 import { UnifiedCard } from "@/components/unified-card";
+import { TransactionSuccessModal } from "@/components/transaction-success-modal";
 
 interface TransactionResult {
   userOperationHash: string;
@@ -79,6 +80,7 @@ export default function HomePage() {
   const [usdcBalance, setUsdcBalance] = useState<string>("");
   const [ethBalance, setEthBalance] = useState<string>("");
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState<string>("");
   const [transactionAmount, setTransactionAmount] = useState<string>("");
   const [selectedToken, setSelectedToken] = useState<string>("eth");
@@ -337,8 +339,17 @@ export default function HomePage() {
             if(wcTx?.method === 'eth_sendTransaction') {
               try {
                 const result = await wallet.sendTransaction(wcTx.params);
-                const response = formatJsonRpcResult(Number(event.id), result);
+                
+                // Send only the transaction hash back to the dApp (standard format)
+                const response = formatJsonRpcResult(Number(event.id), result.transactionHash);
                 await wallet.sendSessionResponse(event.topic, response);
+                
+                // Show transaction success modal for dApp transactions
+                setTransactionResult({
+                  userOperationHash: result.userOperationHash,
+                  transactionHash: result.transactionHash
+                });
+                setShowTransactionModal(true);
                 return;
               } catch (error) {
                 console.error(`Transaction failed:`, error);
@@ -440,6 +451,7 @@ export default function HomePage() {
       }
 
       setTransactionResult(result);
+      setShowTransactionModal(true);
       setStatus("Transaction completed successfully!");
       
       // Refresh balances
@@ -511,29 +523,43 @@ export default function HomePage() {
 
   // Unified Card View
   return (
-    <UnifiedCard
-      isConnected={isConnected}
-      isDappConnected={!!connectedDapp}
-      connectionStatus={connectionStatus}
-      address={address}
-      chainId={chainId}
-      isTestnet={isTestnet}
-      circleDeployment={circleDeployment}
-      circleAccountAddress={circleAccountAddress}
-      usdcBalance={usdcBalance}
-      ethBalance={ethBalance}
-      dappName={connectedDapp?.name}
-      dappIcon={connectedDapp?.icon}
-      uri={uri}
-      setUri={setUri}
-      canConnect={canConnect}
-      onConnect={handleConnect}
-      onDisconnect={connectedDapp ? handleDisconnect : handleWalletDisconnect}
-      onRefreshBalance={refreshUSDCBalance}
-      getChainInfo={getChainInfo}
-      status={status}
-      error={error}
-    />
+    <>
+      <UnifiedCard
+        isConnected={isConnected}
+        isDappConnected={!!connectedDapp}
+        connectionStatus={connectionStatus}
+        address={address}
+        chainId={chainId}
+        isTestnet={isTestnet}
+        circleDeployment={circleDeployment}
+        circleAccountAddress={circleAccountAddress}
+        usdcBalance={usdcBalance}
+        ethBalance={ethBalance}
+        dappName={connectedDapp?.name}
+        dappIcon={connectedDapp?.icon}
+        uri={uri}
+        setUri={setUri}
+        canConnect={canConnect}
+        onConnect={handleConnect}
+        onDisconnect={connectedDapp ? handleDisconnect : handleWalletDisconnect}
+        onRefreshBalance={refreshUSDCBalance}
+        getChainInfo={getChainInfo}
+        status={status}
+        error={error}
+      />
+      
+      {/* Transaction Success Modal */}
+      <TransactionSuccessModal
+        isOpen={showTransactionModal}
+        onClose={() => setShowTransactionModal(false)}
+        transactionHash={transactionResult?.transactionHash || ""}
+        userOperationHash={transactionResult?.userOperationHash || ""}
+        dappName={connectedDapp?.name}
+        dappIcon={connectedDapp?.icon}
+        amount={transactionAmount}
+        recipient={recipientAddress}
+      />
+    </>
   );
 }
 

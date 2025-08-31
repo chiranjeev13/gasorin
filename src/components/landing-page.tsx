@@ -76,7 +76,7 @@ export function LandingPage({ status, error, connectionStatus }: LandingPageProp
 
             {/* Error Display */}
             {error && (
-              <GlassCard className="rounded-lg p-3 mb-4 border-l-4 border-red-500" delay={0.5}>
+              <GlassCard className="rounded-lg p-3 mb-4  border-red-500" delay={0.5}>
                 <div className="flex items-center space-x-2">
                   <span className="text-red-400">⚠️</span>
                   <span className="elegant-text text-red-300 text-sm">{error}</span>

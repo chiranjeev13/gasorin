@@ -53,7 +53,7 @@ export function CircleStatus({
         <div className="space-y-6">
           {/* Smart Account Address */}
           {circleAccountAddress && (
-            <div className="p-4 border-l-4 border-green-500 bg-gray-900">
+            <div className="p-4  border-green-500 bg-gray-900">
               <div className="text-white text-sm mb-2 uppercase tracking-wider">SMART ACCOUNT ADDRESS</div>
               <div className="text-white text-sm break-all">
                 {circleAccountAddress}
@@ -68,7 +68,7 @@ export function CircleStatus({
           {/* Balance Information */}
           <div className="grid grid-cols-2 gap-4">
             {/* ETH Balance */}
-            <div className="p-4 border-l-4 border-yellow-500 bg-gray-900">
+            <div className="p-4  border-yellow-500 bg-gray-900">
               <div className="flex items-center space-x-2 mb-2">
                   <Image src="/eth-logo.svg" alt="ETH" className="w-6 h-6" width={20} height={20} />
                 <span className="text-white font-medium uppercase">ETH</span>
@@ -82,7 +82,7 @@ export function CircleStatus({
             </div>
 
             {/* USDC Balance */}
-            <div className="p-4 border-l-4 border-green-500 bg-gray-900">
+            <div className="p-4  border-green-500 bg-gray-900">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <Image src="/usdc-logo.svg" alt="USDC" className="w-6 h-6" width={20} height={20} />
@@ -119,7 +119,7 @@ export function CircleStatus({
           </div> */}
         </div>
       ) : (
-        <div className="p-6 text-center border-l-4 border-gray-500 bg-gray-900">
+        <div className="p-6 text-center  border-gray-500 bg-gray-900">
           <div className="text-4xl mb-4">🔗</div>
           <p className="text-white font-bold mb-2 uppercase tracking-wider">
             CONNECT YOUR WALLET

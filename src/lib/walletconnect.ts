@@ -516,7 +516,7 @@ export class CircleWalletConnect {
 
   // Send transaction using Circle Smart Account
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async sendTransaction(params: any): Promise<string> {
+  async sendTransaction(params: any): Promise<{ userOperationHash: string; transactionHash: string }> {
     console.log("DEBUG: Sending transaction:", params[0]);
 
     // Check if Circle deployment is available
@@ -545,12 +545,11 @@ export class CircleWalletConnect {
 
       console.log("DEBUG: Transaction result:", result);
 
-      // Return the transaction hash from the result
-      return (
-        result.transactionHash ||
-        result.userOperationHash ||
-        "0x" + Math.random().toString(16).substring(2, 42)
-      );
+      // Return the full result object
+      return {
+        userOperationHash: result.userOperationHash,
+        transactionHash: result.transactionHash
+      };
     } catch (error) {
       console.error("DEBUG: Transaction failed:", error);
       throw error;

@@ -152,17 +152,17 @@ export function UnifiedCard({
 
                 {/* Features */}
                 <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 border-l-4 border-green-500 bg-gray-900">
+                  <div className="p-3  border-green-500 bg-gray-900">
                     <div className="text-green-400 text-lg mb-1">⚡</div>
                     <div className="text-white font-medium text-xs">USDC GAS</div>
                   </div>
                   
-                  <div className="p-3 border-l-4 border-blue-500 bg-gray-900">
+                  <div className="p-3  border-blue-500 bg-gray-900">
                     <div className="text-blue-400 text-lg mb-1">🔐</div>
                     <div className="text-white font-medium text-xs">SECURE</div>
                   </div>
                   
-                  <div className="p-3 border-l-4 border-purple-500 bg-gray-900">
+                  <div className="p-3  border-purple-500 bg-gray-900">
                     <div className="text-purple-400 text-lg mb-1">🌐</div>
                     <div className="text-white font-medium text-xs">MULTI-CHAIN</div>
                   </div>
@@ -203,7 +203,7 @@ export function UnifiedCard({
                 </div>
 
                 {/* Connection Status */}
-                <div className="mb-6 flex items-center justify-between p-4 border-l-4 border-green-500 bg-gray-900">
+                <div className="mb-6 flex items-center justify-between p-4  border-green-500 bg-gray-900">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
                                             <span className="text-white font-medium">
@@ -242,7 +242,7 @@ export function UnifiedCard({
                 transition={{ delay: 0.2 }}
               >
                 {/* Connected DApp Section */}
-                <div className="mb-6 p-4 border-l-4 border-blue-500 bg-gray-900">
+                <div className="mb-6 p-4  border-blue-500 bg-gray-900">
                   <div className="flex items-center space-x-4">
                     {dappIcon ? (
                       <div className="w-12 h-12 bg-white flex items-center justify-center overflow-hidden">
@@ -275,7 +275,7 @@ export function UnifiedCard({
                 </div>
 
                 {/* Smart Account Address */}
-                <div className="mb-6 p-3 border-l-4 border-gray-500 bg-gray-900">
+                <div className="mb-6 p-3  border-gray-500 bg-gray-900">
                   <div className="text-gray-400 text-xs mb-1 uppercase">SMART ACCOUNT</div>
                   <div className="text-white text-sm break-all">
                     {circleAccountAddress}
@@ -285,7 +285,7 @@ export function UnifiedCard({
                 {/* Account Balances */}
                 <div className="mb-6 grid grid-cols-2 gap-4">
                   {/* ETH Balance */}
-                  <div className="p-4 border-l-4 border-yellow-500 bg-gray-900">
+                  <div className="p-4  border-yellow-500 bg-gray-900">
                     <div className="flex items-center space-x-2 mb-2">
                       <div className="w-6 h-6 bg-green-500 flex items-center justify-center">
                         <img src="/eth-logo.svg" alt="ETH" className="w-4 h-4" />
@@ -297,7 +297,7 @@ export function UnifiedCard({
                   </div>
                   
                   {/* USDC Balance */}
-                  <div className="p-4 border-l-4 border-green-500 bg-gray-900">
+                  <div className="p-4  border-green-500 bg-gray-900">
                     <div className="flex items-center space-x-2 mb-2">
                       <div className="w-6 h-6 bg-white flex items-center justify-center">
                         <img src="/usdc-logo.svg" alt="USDC" className="w-5 h-5" />
@@ -318,7 +318,7 @@ export function UnifiedCard({
 
             {/* Error Display */}
             {error && (
-              <div className="p-3 mb-4 border-l-4 border-red-500 bg-gray-900">
+              <div className="p-3 mb-4  border-red-500 bg-gray-900">
                 <div className="flex items-center space-x-2">
                   <span className="text-red-500">⚠️</span>
                   <span className="text-red-300 text-sm">{error}</span>
