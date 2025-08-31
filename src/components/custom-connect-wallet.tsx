@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User, Copy } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import Image from 'next/image';
+// import Image from 'next/image';
 import { useDisconnect } from 'wagmi';
 import { useNetworkSwitch } from '@/hooks/use-network-switch';
 
@@ -66,7 +66,7 @@ const CustomConnectButton = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex text-white items-center gap-3 bg-black hover:bg-gray-900 border border-white py-3 pl-3 pr-6 transition-colors uppercase tracking-wider">
-                      <div className="w-8 h-8 border border-white bg-white">
+                      {/* <div className="w-8 h-8 border border-white bg-white">
                         <Image
                           src="/1.png"
                           className="w-full h-full"
@@ -74,7 +74,7 @@ const CustomConnectButton = () => {
                           height={32}
                           alt="Profile_Image"
                         />
-                      </div>
+                      </div> */}
                       <span className="text-sm uppercase tracking-wider text-white">
                         {account.displayName}
                       </span>

@@ -17,22 +17,22 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Circle Paymaster Wallet - USDC Gas Payments",
-  description: "Enterprise-grade smart account wallet with USDC gas payments powered by Circle Paymaster. Seamlessly send transactions without ETH for gas fees.",
-  keywords: "Circle Paymaster, USDC, Gas Payments, Smart Account, Wallet, DeFi, Web3",
-  authors: [{ name: "Circle Paymaster Team" }],
+  title: "Gasorin - Where Gas Meets Elegance",
+  description: "Modern, cyber-inspired Circle Smart Account wallet with USDC gas payments. Automatic Base Sepolia switching and sleek monospaced design.",
+  keywords: "Gasorin, Circle Paymaster, USDC, Gas Payments, Smart Account, Wallet, DeFi, Web3, Base Sepolia",
+  authors: [{ name: "Gasorin Team" }],
   viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
   openGraph: {
-    title: "Circle Paymaster Wallet - USDC Gas Payments",
-    description: "Enterprise-grade smart account wallet with USDC gas payments powered by Circle Paymaster",
+    title: "Gasorin - Where Gas Meets Elegance",
+    description: "Modern, cyber-inspired Circle Smart Account wallet with USDC gas payments",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Circle Paymaster Wallet - USDC Gas Payments",
-    description: "Enterprise-grade smart account wallet with USDC gas payments powered by Circle Paymaster",
+    title: "Gasorin - Where Gas Meets Elegance",
+    description: "Modern, cyber-inspired Circle Smart Account wallet with USDC gas payments",
   },
 };
 

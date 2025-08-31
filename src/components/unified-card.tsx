@@ -114,7 +114,8 @@ export function UnifiedCard({
 
             {/* Title */}
             <div className="text-center mb-6 pt-8">
-              <h1 className="text-3xl font-bold text-white tracking-wider mb-2">CIRCLE SMART ACCOUNT</h1>
+              <h1 className="text-4xl font-bold text-white tracking-wider mb-2">GASORIN</h1>
+              <h2 className="text-xl font-medium text-gray-300 tracking-wider mb-2">CIRCLE SMART ACCOUNT</h2>
               <p className="text-gray-400 text-sm">
                 {cardState === 'dapp-connected' ? '> CONNECTED TO DAPP' :
                  cardState === 'dashboard' ? '> WALLET DASHBOARD' :
