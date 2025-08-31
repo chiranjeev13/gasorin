@@ -87,7 +87,7 @@ export function UnifiedCard({
       <div className="max-w-2xl w-full relative z-10">
         {/* Main Card */}
         <motion.div 
-          className="bg-black border-2 border-white relative font-mono"
+          className="bg-black border border-white relative font-mono"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -103,7 +103,7 @@ export function UnifiedCard({
 
             {/* Top Right Status */}
             <div className="absolute top-4 right-4">
-              <div className={`w-6 h-6 border-2 flex items-center justify-center ${
+              <div className={`w-6 h-6 border flex items-center justify-center ${
                 connectionStatus === 'connected' ? 'bg-green-500 border-green-500' : 
                 connectionStatus === 'error' ? 'bg-red-500 border-red-500' : 'bg-gray-600 border-gray-600'
               }`}>
@@ -117,7 +117,7 @@ export function UnifiedCard({
               <p className="text-gray-400 text-sm font-mono">
                 {cardState === 'dapp-connected' ? '> CONNECTED TO DAPP' :
                  cardState === 'dashboard' ? '> WALLET DASHBOARD' :
-                 '> CONNECT YOUR WALLET'}
+                 '> USDC GAS SUPPORTED BY CIRCLE PAYMASTER'}
               </p>
             </div>
           </div>
@@ -143,8 +143,7 @@ export function UnifiedCard({
                 </GlassCard> */}
 
                 {/* Connect Wallet Section */}
-                <div className="mb-6">
-                  <h3 className="text-white font-mono text-lg mb-4 tracking-wider">CONNECT YOUR WALLET</h3>
+                <div className="mb-6 flex justify-center">
                   <div className="mb-4">
                     <CustomConnectButton />
                   </div>
@@ -190,12 +189,12 @@ export function UnifiedCard({
                       value={uri}
                       onChange={(e) => setUri(e.target.value.trim())}
                       placeholder="PASTE WALLETCONNECT URI HERE"
-                      className="bg-black border-2 border-white text-white font-mono placeholder-gray-400 w-full pr-20 h-12 px-4"
+                      className="bg-black border border-white text-white font-mono placeholder-gray-400 w-full pr-20 h-12 px-4"
                     />
                     <Button
                       onClick={onConnect}
                       disabled={!canConnect}
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white text-black font-mono font-bold px-4 py-1 text-sm border-2 border-black hover:bg-gray-200 disabled:bg-gray-600 disabled:text-gray-400"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white text-black font-mono font-bold px-4 py-1 text-sm border border-black hover:bg-gray-200 disabled:bg-gray-600 disabled:text-gray-400"
                     >
                       LINK
                     </Button>
@@ -331,7 +330,7 @@ export function UnifiedCard({
               <div className="flex justify-center">
                 <button
                   onClick={onDisconnect}
-                  className="bg-red-500 hover:bg-red-600 text-white font-mono font-bold px-8 py-3 border-2 border-red-500 hover:border-red-600 transition-all duration-200 transform hover:scale-105"
+                  className="bg-red-500 hover:bg-red-600 text-white font-mono font-bold px-8 py-3 border border-red-500 hover:border-red-600 transition-all duration-200 transform hover:scale-105"
                 >
                   {cardState === 'dapp-connected' ? 'DISCONNECT FROM DAPP' : 'DISCONNECT'}
                 </button>

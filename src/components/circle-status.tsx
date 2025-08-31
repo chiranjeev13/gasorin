@@ -60,7 +60,7 @@ export function CircleStatus({
               </div>
               <div className="text-gray-400 font-mono text-xs mt-2 flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500"></div>
-                <span>SECURED BY CIRCLE PAYMASTER</span>
+                <span>USDC GAS SUPPORTED BY CIRCLE PAYMASTER</span>
               </div>
             </div>
           )}

@@ -131,7 +131,7 @@ html {
 /* Cyber-themed component styles */
 @layer components {
   .cyber-card {
-    @apply bg-black border-2 border-white p-6;
+    @apply bg-black border border-white p-6;
     position: relative;
   }
 
@@ -153,7 +153,7 @@ html {
   }
 
   .cyber-input {
-    @apply bg-black border-2 border-white text-white font-mono focus:outline-none focus:border-green-500 px-4 py-3 transition-all duration-200;
+    @apply bg-black border border-white text-white font-mono focus:outline-none focus:border-green-500 px-4 py-3 transition-all duration-200;
     letter-spacing: 0.05em;
   }
 
@@ -162,7 +162,7 @@ html {
   }
 
   .cyber-button {
-    @apply bg-white hover:bg-gray-200 text-black font-mono font-bold uppercase tracking-wider border-2 border-white px-6 py-3 transition-all duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply bg-white hover:bg-gray-200 text-black font-mono font-bold uppercase tracking-wider border border-white px-6 py-3 transition-all duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .cyber-button:hover {
@@ -170,7 +170,7 @@ html {
   }
 
   .cyber-button-success {
-    @apply bg-green-500 hover:bg-green-600 text-white font-mono font-bold uppercase tracking-wider border-2 border-green-500 px-6 py-3 transition-all duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply bg-green-500 hover:bg-green-600 text-white font-mono font-bold uppercase tracking-wider border border-green-500 px-6 py-3 transition-all duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .cyber-button-success:hover {
@@ -178,7 +178,7 @@ html {
   }
 
   .cyber-button-danger {
-    @apply bg-red-500 hover:bg-red-600 text-white font-mono font-bold uppercase tracking-wider border-2 border-red-500 px-6 py-3 transition-all duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply bg-red-500 hover:bg-red-600 text-white font-mono font-bold uppercase tracking-wider border border-red-500 px-6 py-3 transition-all duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .cyber-button-danger:hover {

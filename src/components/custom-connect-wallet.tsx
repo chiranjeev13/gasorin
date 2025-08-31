@@ -55,7 +55,7 @@ const CustomConnectButton = () => {
                   <Button
                     onClick={openConnectModal}
                     variant="ghost"
-                    className="hover:text-black cursor-pointer border-2 border-white px-6 py-3 transition-colors text-black font-mono uppercase tracking-wider bg-white hover:bg-gray-200"
+                    className="hover:text-black cursor-pointer border border-white px-6 py-3 transition-colors text-black font-mono uppercase tracking-wider bg-white hover:bg-gray-200"
                   >
                     CONNECT WALLET
                   </Button>
@@ -65,8 +65,8 @@ const CustomConnectButton = () => {
               return (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex text-white items-center gap-3 bg-black hover:bg-gray-900 border-2 border-white py-3 pl-3 pr-6 transition-colors font-mono uppercase tracking-wider">
-                      <div className="w-8 h-8 border-2 border-white bg-white">
+                    <button className="flex text-white items-center gap-3 bg-black hover:bg-gray-900 border border-white py-3 pl-3 pr-6 transition-colors font-mono uppercase tracking-wider">
+                      <div className="w-8 h-8 border border-white bg-white">
                         <Image
                           src="/1.png"
                           className="w-full h-full"
@@ -83,7 +83,7 @@ const CustomConnectButton = () => {
                       </div>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-black border-2 border-white">
+                  <DropdownMenuContent align="end" className="w-56 bg-black border border-white">
                     <DropdownMenuItem
                       onClick={() => copyAddress(account.address)}
                       className="cursor-pointer text-white hover:bg-gray-900 hover:text-gray-300 font-mono"
