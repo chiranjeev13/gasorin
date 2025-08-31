@@ -40,68 +40,12 @@ export function CircleStatus({
     return chainNames[chainId] || `Chain ${chainId}`;
   };
 
-  const getStatusColor = () => {
-    if (!circleDeployment) return 'text-yellow-400';
-    if (circleAccountAddress) return 'text-green-400';
-    return 'text-red-400';
-  };
-
-  const getStatusText = () => {
-    if (!circleDeployment) return 'Not Initialized';
-    if (circleAccountAddress) return 'Ready';
-    return 'Error';
-  };
-
-  const getStatusIcon = () => {
-    if (!circleDeployment) return '⏳';
-    if (circleAccountAddress) return '✅';
-    return '❌';
-  };
-
   return (
     <div className="elegant-card">
       <h2 className="elegant-heading text-xl mb-6">Circle Smart Account Status</h2>
       
       {circleDeployment && chainId ? (
         <div className="space-y-6">
-          {/* Status Overview */}
-          <div className="glass-effect rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">{getStatusIcon()}</span>
-                <div>
-                  <div className={`elegant-text font-semibold ${getStatusColor()}`}>
-                    {getStatusText()}
-                  </div>
-                  <div className="elegant-text-secondary text-sm">
-                    Circle Paymaster Integration
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Network Information */}
-          <div className="glass-effect rounded-lg p-4">
-            <div className="elegant-heading text-sm mb-3">Network Configuration</div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="elegant-text-secondary">Network:</span>
-                <span className="elegant-text font-semibold">{getChainInfo(chainId)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="elegant-text-secondary">Type:</span>
-                <span className="elegant-text font-semibold">
-                  {isTestnet ? 'Testnet' : 'Mainnet'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="elegant-text-secondary">Chain ID:</span>
-                <span className="elegant-text font-mono">{chainId}</span>
-              </div>
-            </div>
-          </div>
-
           {/* Smart Account Address */}
           {circleAccountAddress && (
             <div className="glass-effect rounded-lg p-4">
@@ -162,12 +106,6 @@ export function CircleStatus({
                 <span className="elegant-text-secondary">Paymaster:</span>
                 <span className="elegant-text font-mono text-xs">
                   {circleDeployment.getChainInfo().paymasterAddress.slice(0, 8)}...
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="elegant-text-secondary">USDC Token:</span>
-                <span className="elegant-text font-mono text-xs">
-                  {circleDeployment.getChainInfo().usdcAddress.slice(0, 8)}...
                 </span>
               </div>
             </div>

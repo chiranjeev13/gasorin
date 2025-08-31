@@ -132,14 +132,14 @@ export function UnifiedCard({
                 transition={{ delay: 0.2 }}
               >
                 {/* Rainbow Kit Integration */}
-                <GlassCard className="rounded-lg p-3 mb-6" delay={0.2}>
+                {/* <GlassCard className="rounded-lg p-3 mb-6" delay={0.2}>
                   <div className="flex items-center space-x-3">
                     <div className="w-6 h-6 bg-gradient-to-br from-pink-400 via-orange-400 to-blue-500 rounded-full flex items-center justify-center">
                       <div className="w-4 h-4 bg-white rounded-full"></div>
                     </div>
                     <span className="elegant-text font-medium">Wallet and Chain ID Managed by Rainbow Kit</span>
                   </div>
-                </GlassCard>
+                </GlassCard> */}
 
                 {/* Connect Wallet Section */}
                 <div className="mb-6">
@@ -223,18 +223,14 @@ export function UnifiedCard({
                   <div className="glass-effect rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-4 h-4 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'} flex items-center justify-center`}>
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
+                        <div className={`w-3 h-3 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
                         <span className="elegant-text font-medium">
-                          {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
+                          {chainId && chainInfo && `Connected to ${chainInfo.name} (${isTestnet ? 'Testnet' : 'Mainnet'})`}
                         </span>
                       </div>
                       {address && (
-                        <div className="text-right">
-                          <div className="elegant-text font-mono text-sm">
-                            {address.slice(0, 6)}...{address.slice(-4)}
-                          </div>
+                        <div className="elegant-text font-mono text-sm">
+                          {address.slice(0, 6)}...{address.slice(-4)}
                         </div>
                       )}
                     </div>
@@ -304,9 +300,6 @@ export function UnifiedCard({
                   <div className="elegant-text font-mono text-sm break-all">
                     {circleAccountAddress}
                   </div>
-                  <div className="elegant-text text-sm mt-2">
-                    {chainInfo?.name} ({chainId})
-                  </div>
                 </div>
 
                 {/* Account Balances */}
@@ -348,13 +341,7 @@ export function UnifiedCard({
               </motion.div>
             )}
 
-            {/* Status Display */}
-            <GlassCard className="rounded-lg p-3 mb-4" delay={0.4}>
-              <div className="flex items-center justify-center space-x-3">
-                <div className={`status-indicator ${connectionStatus === 'connected' ? 'ready' : connectionStatus === 'error' ? 'error' : 'loading'}`}></div>
-                <span className="elegant-text font-medium">{status}</span>
-              </div>
-            </GlassCard>
+
 
             {/* Error Display */}
             {error && (
