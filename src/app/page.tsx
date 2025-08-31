@@ -12,6 +12,7 @@ import { formatJsonRpcResult, formatJsonRpcError } from '@walletconnect/jsonrpc-
 import { CircleAccountDeployment } from "@/lib/circle-deployment";
 import CustomConnectButton from "@/components/custom-connect-wallet";
 import { useAccount, useWalletClient, useBalance, useDisconnect } from 'wagmi';
+import { useNetworkSwitch } from '@/hooks/use-network-switch';
 import { Account } from "viem";
 
 import { UnifiedCard } from "@/components/unified-card";
@@ -68,6 +69,7 @@ export default function HomePage() {
   const { address, isConnected, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { disconnectAsync } = useDisconnect();
+  const { checkAndSwitchNetwork } = useNetworkSwitch();
   const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
   
   // State management
@@ -142,8 +144,8 @@ export default function HomePage() {
           },
         } as unknown as Account;
         
-        // Create Circle deployment instance using current chain
-        const deployment = new CircleAccountDeployment(ownerAccount, chainId.toString(), isTestnet);
+        // Create Circle deployment instance - force Base Sepolia
+        const deployment = new CircleAccountDeployment(ownerAccount, "84532", true); // Base Sepolia
         await deployment.initializeAccount();
         
         setCircleDeployment(deployment);
@@ -160,8 +162,8 @@ export default function HomePage() {
           if (walletRef.current) {
             walletRef.current.setCircleDeployment(circleClient);
             walletRef.current.setCircleAccountAddress(accountAddress);
-            walletRef.current.setChainId(chainId.toString());
-            walletRef.current.setNetworkType(isTestnet);
+            walletRef.current.setChainId("84532"); // Force Base Sepolia
+            walletRef.current.setNetworkType(true); // Force testnet
           }
 
           // Check USDC balance
@@ -206,8 +208,8 @@ export default function HomePage() {
             const circleClient = circleDeployment.getCircleClient();
             wallet.setCircleDeployment(circleClient);
             wallet.setCircleAccountAddress(circleAccountAddress);
-            wallet.setChainId(chainId?.toString() || "1");
-            wallet.setNetworkType(isTestnet);
+            wallet.setChainId("84532"); // Force Base Sepolia
+            wallet.setNetworkType(true); // Force testnet
           }
 
           // Set up event listeners
@@ -397,16 +399,33 @@ export default function HomePage() {
     }
   }, [initialized, projectId, circleDeployment, circleAccountAddress, chainId, isTestnet]);
 
+  // Auto-switch to Base Sepolia when wallet connects
+  useEffect(() => {
+    if (isConnected && chainId !== 84532) { // 84532 is Base Sepolia
+      const switchToBaseSepolia = async () => {
+        try {
+          setStatus("Switching to Base Sepolia...");
+          await checkAndSwitchNetwork(84532); // Base Sepolia chain ID
+          setStatus("Switched to Base Sepolia successfully!");
+        } catch (error) {
+          console.error("Failed to switch to Base Sepolia:", error);
+          setError("Failed to switch to Base Sepolia. Please switch manually.");
+        }
+      };
+      switchToBaseSepolia();
+    }
+  }, [isConnected, chainId, checkAndSwitchNetwork]);
+
   // Update WalletConnect wallet when Circle deployment changes
   useEffect(() => {
     if (walletRef.current && circleDeployment && circleAccountAddress) {
       const circleClient = circleDeployment.getCircleClient();
       walletRef.current.setCircleDeployment(circleClient);
       walletRef.current.setCircleAccountAddress(circleAccountAddress);
-      walletRef.current.setChainId(chainId?.toString() || "1");
-      walletRef.current.setNetworkType(isTestnet);
+      walletRef.current.setChainId("84532"); // Force Base Sepolia
+      walletRef.current.setNetworkType(true); // Force testnet
     }
-  }, [circleDeployment, circleAccountAddress, chainId, isTestnet]);
+  }, [circleDeployment, circleAccountAddress]);
 
   // Utility functions
   const getChainInfo = (chainId: number) => {

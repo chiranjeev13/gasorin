@@ -206,12 +206,12 @@ export function UnifiedCard({
                 <div className="mb-6 flex items-center justify-between p-4  border-green-500 bg-gray-900">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                            <span className="text-white font-medium">
+                    <span className="text-white font-medium">
                       {chainId && chainInfo && `CONNECTED TO ${chainInfo.name.toUpperCase()} (${isTestnet ? 'TESTNET' : 'MAINNET'})`}
                     </span>
                   </div>
                   {address && (
-                                            <div className="text-white text-sm">
+                    <div className="text-white text-sm">
                       {address.slice(0, 6)}...{address.slice(-4)}
                     </div>
                   )}

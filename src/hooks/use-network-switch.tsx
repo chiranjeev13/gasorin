@@ -50,7 +50,7 @@ export const useNetworkSwitch = () => {
     }
 
     // If no target chain specified, use the first supported chain (mainnet)
-    const targetChain = targetChainId || SUPPORTED_CHAINS[0].id;
+    const targetChain = targetChainId || baseSepolia.id;
 
     if (chainId !== targetChain) {
       try {
