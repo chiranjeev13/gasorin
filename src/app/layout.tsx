@@ -18,21 +18,21 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: "Gasorin - Where Gas Meets Elegance",
-  description: "Modern, cyber-inspired Circle Smart Account wallet with USDC gas payments. Automatic Base Sepolia switching and sleek monospaced design.",
-  keywords: "Gasorin, Circle Paymaster, USDC, Gas Payments, Smart Account, Wallet, DeFi, Web3, Base Sepolia",
+  description: "Circle Smart Account wallet with USDC gas payments.",
+  keywords: "Gasorin, Circle Paymaster, USDC, Gas Payments, Smart Account, Wallet, DeFi, Web3",
   authors: [{ name: "Gasorin Team" }],
   viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
   openGraph: {
     title: "Gasorin - Where Gas Meets Elegance",
-    description: "Modern, cyber-inspired Circle Smart Account wallet with USDC gas payments",
+    description: "Modern, Circle Smart Account wallet with USDC gas payments",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Gasorin - Where Gas Meets Elegance",
-    description: "Modern, cyber-inspired Circle Smart Account wallet with USDC gas payments",
+    description: "Modern, Circle Smart Account wallet with USDC gas payments",
   },
 };
 
