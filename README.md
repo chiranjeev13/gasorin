@@ -59,22 +59,52 @@ A WalletConnect implementation for Circle Smart Accounts that supports USDC gas 
 - Send transactions directly from the interface or via connected dApps
 - All transactions use USDC for gas via Circle Paymaster
 
-## 🚀 Deployment
+## Technical Flow Summary
 
-### Vercel (Recommended)
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Set environment variables in Vercel dashboard
-4. Deploy automatically on push
+### 1. **Smart Account Initialization Phase**
+- **EOA Connection**: User connects their Externally Owned Account (EOA) to the application
+- **Address Computation**: Circle SDK computes the deterministic smart account address using the `CREATE2` opcode
+- **Client Instantiation**: Smart account client is created, enabling interactions with the computed smart account address
 
-### Manual Deployment
-```bash
-# Build the application
-pnpm build
+### 2. **WalletConnect Session Establishment**
+- **URI Generation**: WalletConnect SDK generates a connection URI for DeFi applications
+- **dApp Connection**: User scans/copy-link the URI with a DeFi application to establish a secure session
+- **Session Management**: Secure connection established between the smart account and DeFi platform
 
-# Start production server
-pnpm start
-```
+### 3. **Smart Account Deployment (First User Operation)**
+- **UserOperation Preparation**: Circle SDK prepares a UserOperation object for the first transaction
+- **Factory Data Inclusion**: UserOperation includes `initCode` containing factory deployment data
+- **CREATE2 Opcode Execution**: Smart account address is deterministically computed and deployed on-chain
+- **Account Abstraction**: ERC-4337 standard ensures the smart account is deployed during the first operation
+
+### 4. **RPC Method Override & Smart Account Integration**
+- **Method Interception**: WalletConnect intercepts RPC method calls sent by the connected DeFi application
+- **Smart Account Method Replacement**: Standard RPC methods are overridden with smart account-compatible implementations
+- **Seamless User Experience**: Users interact with DeFi apps normally while transactions are automatically routed through the smart account
+- **Transparent Abstraction**: DeFi applications see standard Ethereum RPC responses while the underlying execution uses smart account infrastructure
+
+### 5. **USDC Paymaster Authorization Flow**
+- **Permit Signature Creation**: User signs an EIP-2612 permit message authorizing the paymaster to spend USDC
+- **Authorization Scope**: Permit authorizes specific USDC amount for gas fee coverage
+- **Smart Account Authorization**: Permit is signed by the smart account owner for USDC spending permissions.(Make sure you have USDC in your smart account)
+
+### 6. **Transaction Execution & Gas Payment**
+- **UserOperation Signing**: User signs the UserOperation hash confirming transaction details
+- **Permit Integration**: Permit signature is included in the UserOperation for paymaster verification
+- **Bundler Submission**: Signed UserOperation is sent to Pimlico bundler service
+- **On-chain Execution**: Bundler submits UserOperation to the blockchain
+- **USDC Deduction**: Paymaster verifies permit signature and deducts USDC from smart account for gas fees
+
+### 7. **Key Technical Components**
+- **CREATE2 Opcode**: Deterministic smart account address computation
+- **ERC-4337 Standard**: Account abstraction for gasless transactions
+- **EIP-2612 Permit**: Gasless USDC authorization mechanism
+- **Circle Paymaster**: USDC-based gas fee coverage system
+- **Pimlico Bundler**: UserOperation bundling and submission service
+- **WalletConnect Protocol**: Secure dApp connection and session management
+- **RPC Method Override**: Seamless integration layer between DeFi apps and smart account infrastructure
+
+This architecture enables users to interact with DeFi applications seamlessly without holding native tokens for gas fees, while maintaining security through permit signatures and leveraging the ERC-4337 account abstraction standard. The RPC method override ensures a completely transparent user experience where DeFi applications function normally while leveraging smart account capabilities behind the scenes.
 
 ## 📄 License
 
